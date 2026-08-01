@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>農業部水產試驗所｜鯖魚漁業資源儀表板 台灣・日本</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1b2a; --panel:#152a3f; --panel2:#1b3550;
+  --panel-b:#24415e; --ink:#e8f1f8; --ink2:#9fb8ce; --ink3:#6d8aa4;
+  --acc:#4cc9f0; --acc2:#f9c74f; --warn:#f4736c; --ok:#7bd389; --pur:#b39ddb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b1725 0%,#0d1b2a 100%);color:var(--ink);
+ font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Hiragino Sans",system-ui,sans-serif;
+ -webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 60px}
+header{padding:34px 0 18px;border-bottom:1px solid #23405c}
+.org{font-size:14px;font-weight:600;color:var(--acc);letter-spacing:1.2px;margin-bottom:9px;
+ padding-left:11px;border-left:3px solid var(--acc)}
+.org .jp{color:var(--ink3);font-size:11.5px;letter-spacing:.3px;margin-left:6px}
+h1{margin:0;font-size:27px;letter-spacing:.5px;font-weight:700}
+h1 small{display:block;font-size:13px;color:var(--ink3);font-weight:400;margin-top:7px;letter-spacing:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:20px 0 24px;border-bottom:1px solid #23405c}
+.tab{padding:10px 16px;background:none;border:none;color:var(--ink2);font-size:14px;cursor:pointer;
+ border-bottom:2px solid transparent;font-family:inherit;transition:.15s;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600}
+.page{display:none} .page.on{display:block}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--panel-b);border-radius:10px;padding:18px 20px}
+.card h3{margin:0 0 4px;font-size:15px;font-weight:600;letter-spacing:.3px}
+.card .sub{font-size:11.5px;color:var(--ink3);margin-bottom:14px;line-height:1.5}
+.kpi{background:var(--panel);border:1px solid var(--panel-b);border-radius:10px;padding:16px 18px}
+.kpi .lab{font-size:11.5px;color:var(--ink3);letter-spacing:.4px}
+.kpi .val{font-size:27px;font-weight:700;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.kpi .note{font-size:11.5px;color:var(--ink2);line-height:1.55}
+.chartbox{position:relative;height:320px}
+.chartbox.tall{height:400px}
+.chartbox.short{height:250px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #23405c;vertical-align:top}
+th{color:var(--ink3);font-weight:600;font-size:11.5px;letter-spacing:.5px;background:#12243a}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 9px;border-radius:11px;font-size:11px;font-weight:600}
+.p-bad{background:rgba(244,115,108,.16);color:#ff9b95}
+.p-ok{background:rgba(123,211,137,.16);color:#8fe09c}
+.p-mid{background:rgba(249,199,79,.16);color:#f9c74f}
+.note-box{background:#12243a;border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:13px 16px;
+ font-size:12.5px;color:var(--ink2);line-height:1.75;margin-top:14px}
+.note-box b{color:var(--ink)}
+.jp{color:var(--ink3);font-size:.86em;font-weight:400}
+ul.tight{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.85;color:var(--ink2)}
+ul.tight li{margin-bottom:3px}
+ul.tight b{color:var(--ink)}
+a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.sec-title{font-size:13px;color:var(--acc);letter-spacing:1.4px;font-weight:700;margin:30px 0 12px;
+ text-transform:uppercase;border-left:3px solid var(--acc);padding-left:10px}
+.sec-title:first-child{margin-top:0}
+.btn{background:var(--acc);color:#062334;border:none;border-radius:7px;padding:10px 20px;font-size:13.5px;
+ font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{filter:brightness(1.12)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;border:1px solid var(--panel-b);color:var(--ink2);font-weight:500}
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.switch{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.st{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);
+ background:#12243a;border:1px solid var(--panel-b);border-radius:8px;padding:9px 12px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ink3);flex:none}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--warn)}
+.dot.run{background:var(--acc2);animation:pl 1s ease-in-out infinite}
+@keyframes pl{50%{opacity:.2}}
+.prog{height:4px;background:#12243a;border-radius:3px;overflow:hidden;margin-top:14px}
+.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .35s}
+#updMsg{font-size:12.5px;color:var(--ink2);margin-top:11px;line-height:1.7}
+.livebar{background:#12243a;border:1px solid var(--panel-b);border-left:3px solid var(--acc);
+ border-radius:0 9px 9px 0;padding:11px 16px;margin-bottom:16px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+.src-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:9px 0;
+ border-bottom:1px solid #23405c;font-size:12.5px;color:var(--ink2);align-items:center}
+ul.news li{margin-bottom:8px;line-height:1.6}
+code{background:#0b1725;border:1px solid var(--panel-b);border-radius:4px;padding:1px 5px;font-size:.92em}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:11.5px;color:var(--ink3);line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="org">農業部水產試驗所 <span class="jp">Fisheries Research Institute, Ministry of Agriculture</span></div>
+  <h1>鯖魚漁業資源儀表板 <span class="jp">サバ類資源 Dashboard</span>
+  <small>台灣（花腹鯖・白腹鯖）× 日本（マサバ太平洋系群・対馬暖流系群）｜資料截至 FRA 令和7（2025）年度資源評價</small></h1>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<!-- ===== 總覽 ===== -->
+<div class="page on" id="p0">
+  <div class="livebar" id="liveBar"></div>
+  <div class="grid g4">
+    <div class="kpi"><div class="lab">太平洋系群 親魚量 <span class="jp">SSB</span></div>
+      <div class="val" style="color:var(--warn)">9.7<span style="font-size:14px;color:var(--ink3)"> 萬噸</span></div>
+      <div class="note">2024漁期。僅為目標管理基準值 48.2 萬噸的 <b>0.20 倍</b>，且已低於限界管理基準值</div></div>
+    <div class="kpi"><div class="lab">太平洋系群 漁獲壓力 <span class="jp">F/Fmsy</span></div>
+      <div class="val" style="color:var(--warn)">2.07</div>
+      <div class="note">2024漁期漁獲壓仍為 Fmsy proxy 的 2.07 倍；1970年以來僅 4 個年份低於 Fmsy</div></div>
+    <div class="kpi"><div class="lab">對馬暖流系群 親魚量</div>
+      <div class="val" style="color:var(--ok)">34.0<span style="font-size:14px;color:var(--ink3)"> 萬噸</span></div>
+      <div class="note">2024年，為 SBmsy（33.0 萬噸）的 1.03 倍，動向判定「<b>增加</b>」</div></div>
+    <div class="kpi"><div class="lab">台灣鯖魚年產量 <span class="jp">近年</span></div>
+      <div class="val" style="color:var(--acc2)">~6<span style="font-size:14px;color:var(--ink3)"> 萬噸</span></div>
+      <div class="note">占沿近海漁獲量近 6 成、產值 20%；2019 年 42,660 噸為 16 年新低</div></div>
+  </div>
+
+  <div class="sec-title">三大族群現況比較</div>
+  <div class="card">
+    <table>
+      <tr><th style="width:16%">系群／區域</th><th>資源狀態</th><th>近年漁獲量</th><th>關鍵動態</th><th style="width:11%">燈號</th></tr>
+      <tr><td><b>マサバ太平洋系群</b><br><span class="jp">Pacific stock</span></td>
+        <td>親魚量 9.7 萬噸<br>低於限界管理基準值 14.2 萬噸</td>
+        <td>2024漁期 12.3 萬噸<br>（日本僅 4.8 萬噸）</td>
+        <td>2013 年級群消退後未再出現高加入；黑潮大蛇行造成常磐・三陸海域高溫、鯖魚不南下；低成長化持續</td>
+        <td><span class="pill p-bad">危險</span></td></tr>
+      <tr><td><b>マサバ対馬暖流系群</b><br><span class="jp">Tsushima Warm Current</span></td>
+        <td>親魚量 34.0 萬噸<br>高於 SBmsy（33.0 萬噸）</td>
+        <td>2024年 26.0 萬噸<br>（日 13.5＋韓 12.5）</td>
+        <td>2022 年起連續良好加入，2024 年加入量 25.6 億尾為近年最高；但中國漁獲（2024 年 24.8 萬噸）未納入評估</td>
+        <td><span class="pill p-ok">良好</span></td></tr>
+      <tr><td><b>台灣 花腹鯖・白腹鯖</b><br><span class="jp">東北部海域</span></td>
+        <td>無正式 MSY 基準值<br>以平均體長作為主要指標</td>
+        <td>約 6～7 萬噸／年<br>2019 年 42,660 噸</td>
+        <td>2013 年《鯖鰺漁業管理辦法》後體長回升，但 2021 年平均體長跌至 28.3 cm（納管 9 年最低）；黑潮異常與幼魚捕撈為主因</td>
+        <td><span class="pill p-mid">警戒</span></td></tr>
+    </table>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>對馬暖流系群 神戶圖軌跡 <span class="jp">Kobe plot</span></h3>
+      <div class="sub">橫軸＝親魚量／SBmsy、縱軸＝漁獲壓力／Fmsy。右下綠色區為「資源充足且漁獲壓適當」的理想象限</div>
+      <div class="chartbox"><canvas id="c_kobe"></canvas></div></div>
+    <div class="card"><h3>兩系群漁獲量長期對比</h3>
+      <div class="sub">太平洋系群為漁期年（7月～翌年6月）全體（含外國），對馬暖流系群為曆年日韓合計</div>
+      <div class="chartbox"><canvas id="c_ov"></canvas></div></div>
+  </div>
+
+  <div class="note-box"><b>閱讀重點：</b>兩個日本系群方向完全相反。太平洋系群自 2019 年起加入量長期低迷、外國漁獲加劇、海洋環境不利，親魚量已跌破限界管理基準值，2026 漁期 ABC 被壓縮至 6.2 萬噸；對馬暖流系群則因 2022 年後連續良好加入而回升至 MSY 水準以上。台灣位於鯖魚洄游路線最南端，資源狀態同時受到東海系群整體豐度與在地漁撈壓力雙重影響。</div>
+</div>
+
+<!-- ===== 最新資訊（自動更新） ===== -->
+<div class="page" id="p_live">
+  <div class="sec-title">一鍵更新</div>
+  <div class="card">
+    <h3>更新最新資訊 <span class="jp">Live data update</span></h3>
+    <div class="sub">按下按鈕後，儀表板會即時連線下列四類公開來源，抓取最新鯖魚資料並更新本頁圖表與「總覽」頁上方的即時列。抓取結果儲存在瀏覽器本機，下次開啟本檔會自動載入上次結果。</div>
+    <div class="bar">
+      <button class="btn" id="btnUpd">立即更新最新資訊</button>
+      <button class="btn ghost" id="btnClr">清除快取</button>
+      <label class="switch"><input type="checkbox" id="chkProxy" checked>允許公用 CORS 代理（以本機檔案開啟時通常必需）</label>
+    </div>
+    <div class="prog"><i id="progBar"></i></div>
+    <div id="updMsg">尚未執行更新。點擊上方按鈕開始。</div>
+    <div class="grid g4" style="margin-top:16px">
+      <div class="st"><span class="dot" id="d_moa"></span><span>台灣魚市場鯖魚交易行情</span></div>
+      <div class="st"><span class="dot" id="d_fra"></span><span>日本 FRA 新年度資源評價</span></div>
+      <div class="st"><span class="dot" id="d_fa"></span><span>台灣漁業統計年報</span></div>
+      <div class="st"><span class="dot" id="d_news"></span><span>新聞・輿情</span></div>
+    </div>
+  </div>
+
+  <div class="sec-title">台灣鯖魚即時交易行情</div>
+  <div class="grid g4" id="liveKpi">
+    <div class="kpi"><div class="lab">最新交易日均價</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未更新</div></div>
+    <div class="kpi"><div class="lab">最新交易日成交量</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未更新</div></div>
+    <div class="kpi"><div class="lab">近 30 日均價</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未更新</div></div>
+    <div class="kpi"><div class="lab">日均價變動</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未更新</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>鯖魚交易均價走勢 <span class="jp">近 30 日</span></h3>
+      <div class="sub">資料來源：農業部農業資料開放平臺「漁產品交易行情」。均價為各魚市場成交量加權平均</div>
+      <div class="chartbox"><canvas id="c_live_price"></canvas></div></div>
+    <div class="card"><h3>鯖魚每日成交量 <span class="jp">近 30 日</span></h3>
+      <div class="sub">全國各魚市場合計，單位公斤。休市日不列入</div>
+      <div class="chartbox"><canvas id="c_live_qty"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h3>最新交易日 各魚市場明細</h3>
+    <div class="sub" id="liveMktSub">尚未更新</div>
+    <table id="t_live_market"><tr><td style="color:var(--ink3);border:none">—</td></tr></table>
+  </div>
+
+  <div class="sec-title">來源更新檢查</div>
+  <div class="card"><h3>日本 FRA・台灣漁業署 是否已發布新版資料</h3>
+    <div class="sub">本檢查以「探測新年度網頁／文件是否已上線」的方式判斷，偵測到新版時請以連結開啟原始文件核對；PDF 內的數值仍需人工或另行請 Claude 更新至儀表板本體</div>
+    <div id="srcCheck" style="font-size:12.5px;color:var(--ink3)">尚未更新</div>
+  </div>
+
+  <div class="sec-title">鯖魚相關最新新聞</div>
+  <div class="card"><h3>中文・日文新聞標題 <span class="jp">Google News RSS</span></h3>
+    <div class="sub">依發布時間排序，僅列標題與來源連結，不代表本儀表板立場</div>
+    <ul class="tight news" id="newsList"><li style="color:var(--ink3)">尚未更新</li></ul>
+  </div>
+
+  <div class="note-box"><b>技術說明：</b>本頁所有抓取皆在您的瀏覽器端直接執行，不經過任何伺服器保存資料。以本機檔案（file://）開啟 HTML 時，瀏覽器同源政策會阻擋直接跨網域請求，因此預設啟用公用 CORS 代理（allorigins／codetabs／corsproxy）作為備援；這些代理僅用於轉發<b>公開的政府開放資料與新聞 RSS</b>，不會傳送任何個人資訊。若您在意第三方轉發，可取消勾選代理選項，並改以本機 HTTP 伺服器開啟本檔（例如在本資料夾執行 <code>python -m http.server</code> 後開啟 <code>http://localhost:8000</code>），部分來源即可直連。<br><b>更新範圍：</b>「台灣即時交易行情」與「新聞」為真正的即時數值更新；「FRA 資源評價」與「漁業統計年報」因原始資料為 PDF，僅能自動偵測新版是否發布，資源量、親魚量、F/Fmsy 等核心數列仍維持人工核校後寫入，以確保儀表板數值可回溯至原始報告。</div>
+</div>
+<!-- ===== 漁獲量 ===== -->
+<div class="page" id="p1">
+  <div class="sec-title">日本 マサバ太平洋系群 漁獲量</div>
+  <div class="card">
+    <h3>國別漁獲量堆疊 <span class="jp">1970–2024 漁期年</span></h3>
+    <div class="sub">1978 漁期達 142.8 萬噸的歷史高峰，1990–1991 年跌至 3 萬噸以下。2014 年起中國、俄羅斯進入西北太平洋公海作業；<b style="color:var(--acc2)">2024 漁期中國漁獲 6.80 萬噸已超過日本的 4.76 萬噸</b></div>
+    <div class="chartbox tall"><canvas id="c_pac1"></canvas></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>日本國內漁業種別</h3>
+      <div class="sub">北部太平洋大中型圍網（北区まき網）長期為主力，2021 年後急速崩跌；定置網比重相對上升</div>
+      <div class="chartbox"><canvas id="c_pac2"></canvas></div></div>
+    <div class="card"><h3>日本 vs 外國漁獲占比</h3>
+      <div class="sub">外國（中・俄）在總漁獲中的比例，2024 漁期已達 61%</div>
+      <div class="chartbox"><canvas id="c_pac3"></canvas></div></div>
+  </div>
+
+  <div class="sec-title">日本 マサバ対馬暖流系群 漁獲量</div>
+  <div class="card">
+    <h3>日韓漁獲量與大中型圍網努力量 <span class="jp">1973–2024 曆年</span></h3>
+    <div class="sub">1996 年日韓合計 82.1 萬噸為歷史峰值；2000 年後多在 20 萬噸上下。努力量（網數）自 1980 年代末持續下降，2024 年為 1973 年以來最低。中國東海鯖類漁獲 2024 年達 24.8 萬噸但未納入本評估</div>
+    <div class="chartbox tall"><canvas id="c_tsu1"></canvas></div>
+  </div>
+
+  <div class="sec-title">臺灣 鯖鰺漁業漁獲量</div>
+  <div class="card">
+    <h3>鯖鰺漁業長期漁獲量 <span class="jp">1959–2024 曆年</span></h3>
+    <div class="sub">資料：漁業統計年報「歷年漁業生產量值」。鯖鰺圍網（大型圍網船組）自 1979 年起大幅擴張，1996 年達 77,075 公噸的歷史高峰；<b style="color:var(--acc2)">大型圍網船組於 2013 年全數退役</b>，主力轉為扒網（俗稱三腳虎），2011 年起扒網成為主要統計項目。扒網漁獲 2023 年 98,782 公噸為歷來最高</div>
+    <div class="chartbox tall"><canvas id="c_tw_hist"></canvas></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>鯖鰺漁業占近海漁業比重</h3>
+      <div class="sub">扒網／鯖鰺圍網漁獲量 ÷ 近海漁業合計。2011 年後扒網長期占近海漁業 5–6 成以上，2023 年達 62%</div>
+      <div class="chartbox"><canvas id="c_tw_share"></canvas></div></div>
+    <div class="card"><h3>近海漁業與全國總漁獲量</h3>
+      <div class="sub">全國總漁獲量 2007 年 150.4 萬公噸為歷史高峰，2024 年為 103.9 萬公噸；近海漁業則自 1980 年 37.0 萬公噸的高峰持續下滑至 2024 年 14.7 萬公噸，<b>減少 60%</b></div>
+      <div class="chartbox"><canvas id="c_tw_tot"></canvas></div></div>
+  </div>
+  <div class="note-box">完整的臺灣魚種別、縣市別、漁法別 2024 年細部資料，請見「<b>臺灣鯖魚專頁</b>」分頁。</div>
+</div>
+
+<!-- ===== 資源動態 ===== -->
+<div class="page" id="p2">
+  <div class="sec-title">対馬暖流系群 完整資源動態序列 <span class="jp">1973–2024</span></div>
+  <div class="grid g2">
+    <div class="card"><h3>資源量與親魚量 <span class="jp">資源量・親魚量</span></h3>
+      <div class="sub">虛線為目標管理基準值 SBmsy＝33.0 萬噸。2003 年親魚量 11.7 萬噸為歷史最低，2024 年回升至 34.0 萬噸</div>
+      <div class="chartbox"><canvas id="c_ts1"></canvas></div></div>
+    <div class="card"><h3>加入量與再生產成功率 <span class="jp">加入量・RPS</span></h3>
+      <div class="sub">1995 年 32.9 億尾為 1973 年以來最高；2024 年 25.6 億尾為極高加入</div>
+      <div class="chartbox"><canvas id="c_ts2"></canvas></div></div>
+    <div class="card"><h3>漁獲壓力 F/Fmsy 與 %SPR</h3>
+      <div class="sub">1996 年 F/Fmsy 達 2.46、%SPR 僅 8.3% 為最惡化年；2020 年後 F/Fmsy 已降至 1.0 以下</div>
+      <div class="chartbox"><canvas id="c_ts3"></canvas></div></div>
+    <div class="card"><h3>漁獲割合 <span class="jp">漁獲量／資源量</span></h3>
+      <div class="sub">1996 年 60% 為峰值；2020 年後降至 29–35%</div>
+      <div class="chartbox"><canvas id="c_ts4"></canvas></div></div>
+  </div>
+
+  <div class="sec-title">太平洋系群 資源量／親魚量</div>
+  <div class="card">
+    <h3>資源量與親魚量（含將來預測） <span class="jp">SAM 狀態空間模型</span></h3>
+    <div class="sub">FRA 令和7年度報告未附完整年別表，故僅呈現報告內文明確記載之年份。<b>散點</b>＝歷史文獻錨點（不連線，避免內插誤導）；<b>折線</b>＝2020–2026 漁期完整序列（2025、2026 為將來預測）。虛線為目標管理基準值 SBmsy proxy＝48.2 萬噸、限界管理基準值＝14.2 萬噸</div>
+    <div class="chartbox tall"><canvas id="c_pacS"></canvas></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>近 5 年與將來 2 年推估值</h3>
+      <table id="t_recent"></table>
+      <div style="font-size:11px;color:var(--ink3);margin-top:10px;line-height:1.7">
+      漁獲量（解析值）＝SAM 推估之年齡別漁獲尾數 × 年齡別平均體重，與各國報告值合計之「實績值」不同。2025、2026 漁期為將來預測平均值；2026 漁期漁獲量採用 ABC。</div>
+    </div>
+    <div class="card"><h3>資源史關鍵轉折 <span class="jp">太平洋系群</span></h3>
+      <ul class="tight">
+        <li><b>1970 年代：</b>資源量 400–600 萬噸的極高水準，1978 漁期漁獲 142.8 萬噸</li>
+        <li><b>1980–1991：</b>低再生產成功率＋高漁獲壓，資源量降至 23.2 萬噸（1990），親魚量 5.8 萬噸（1991）</li>
+        <li><b>2001–2002：</b>資源量 18.8 萬噸、親魚量 3.9 萬噸，雙雙創歷史最低</li>
+        <li><b>2004、2013 年級群：</b>兩次高加入使資源量分別回升至 80 萬噸、225 萬噸（2013 漁期）</li>
+        <li><b>2017 漁期：</b>親魚量急升至 75 萬噸，為 1985 年後最高</li>
+        <li><b>2020 漁期起：</b>持續減少，2024 漁期資源量 93.0 萬噸、親魚量 9.7 萬噸，跌破限界管理基準值</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 體長體重 ===== -->
+<div class="page" id="p3">
+  <div class="sec-title">日本 太平洋系群 年齡結構與個體大小</div>
+  <div class="card">
+    <h3>年齡別漁獲尾數組成 <span class="jp">1970–2024 漁期年</span></h3>
+    <div class="sub">1990–2004 漁期由 0、1 歲未成魚主導；2004、2013 年級群加入後 2 歲以上比例提高。2022 漁期起 0・1 歲比例再度回升，顯示資源結構重新年輕化</div>
+    <div class="chartbox tall"><canvas id="c_age"></canvas></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>漁獲物平均個體重（推算） <span class="jp">derived</span></h3>
+      <div class="sub">＝總漁獲量 ÷ 總漁獲尾數。2010–2012 漁期 366–437 g；2013 年級群大量加入後降至 210–300 g 區間。<b style="color:var(--acc2)">注意：</b>此指標同時受年齡組成與各國漁場差異影響，非純粹的成長指標</div>
+      <div class="chartbox"><canvas id="c_mw"></canvas></div></div>
+    <div class="card"><h3>FRA 官方對「低成長化」的判定</h3>
+      <ul class="tight">
+        <li><b>太平洋系群：</b>2024 漁期年齡別平均體重「顯著低於」2011–2014 漁期平均值，<b>甚至低於 1970 年代資源高水準期</b>（FRA-SA2025-SC17-01 圖2-2）</li>
+        <li><b>成因（種內・種間密度效應）：</b>2013 年極高加入＋2015 年起真沙丁魚（マイワシ）資源增加 → 餌料競爭 → 低成長化（Kamimura et al. 2021）</li>
+        <li><b>2020 年後的異常：</b>鯖魚資源量已減少、真沙丁魚增勢停滯，低成長化仍持續 → 推測為黑潮續流北偏、常磐・三陸沖顯著高溫化，導致低營養價值溫帶性小型餌料生物占優勢</li>
+        <li><b>連鎖後果：</b>低成長 → 成熟開始年齡高齡化 → 即使抑制漁獲，親魚量仍不易增加 → 資源對漁獲的脆弱性上升</li>
+        <li><b>對馬暖流系群成長（Shiraishi et al. 2008）：</b>孵化後 1 年 25–28 cm、2 年 29–32 cm、3 年 33–35 cm、4 年 36 cm、5 年 37 cm（尾叉長）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec-title">台灣 漁獲體長變化</div>
+  <div class="grid g2">
+    <div class="card"><h3>禁漁期實施前後平均體長 <span class="jp">2013 年《鯖鰺漁業管理辦法》</span></h3>
+      <div class="sub">「禁漁期前」＝2008–2012 年 5 年間；「禁漁期後」＝2013–2020 年（民國 102–109 年）。資料來源：漁業署委託調查</div>
+      <div class="chartbox short"><canvas id="c_tw1"></canvas></div>
+      <div class="legend"><span><i style="background:#f4736c"></i>禁漁期實施前（2008–2012）</span><span><i style="background:#7bd389"></i>禁漁期實施後（2013–2020）</span></div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.6">※ 花腹鯖禁漁期後官方表述為「平均體長已達 30 公分以上」，未公布上限，圖中以 30 cm 起始短柱表示。</div>
+    </div>
+    <div class="card"><h3>花腹鯖體長長期變化</h3>
+      <table>
+        <tr><th>指標</th><th class="num">數值</th><th>時期／來源</th></tr>
+        <tr><td>最大體長</td><td class="num">44.95 cm</td><td>1970–80 年代（李國添等調查）</td></tr>
+        <tr><td>最大體長</td><td class="num" style="color:var(--warn)">37.01 cm</td><td>2010 年 — 較 1970s 減少約 8 cm</td></tr>
+        <tr><td>最大體長</td><td class="num">40.9 cm</td><td>2013 年（民國 102 年，禁漁期起始）</td></tr>
+        <tr><td>最大體長</td><td class="num" style="color:var(--ok)">43.8 cm</td><td>2020 年（民國 109 年）— 明顯回升</td></tr>
+        <tr><td>平均體長</td><td class="num">29.5 cm</td><td>2013 年</td></tr>
+        <tr><td>平均體長</td><td class="num" style="color:var(--ok)">30.2 cm</td><td>2020 年</td></tr>
+        <tr><td>全鯖魚平均體長</td><td class="num" style="color:var(--warn)">28.3 cm</td><td><b>2021 年 — 納管 9 年來最低</b></td></tr>
+      </table>
+      <div class="note-box" style="margin-top:12px">體長 22 cm 以下為 0 歲幼魚、22–30 cm 為 1 歲魚、31–34 cm 為 2 歲魚。鯖魚需 2 歲後才完全性成熟，所產魚卵品質較佳。2013 年初學者發現平均體長已降至 28 cm 以下並伴隨性成熟提早，是《鯖鰺漁業管理辦法》緊急訂定的直接原因。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 臺灣專頁 ===== -->
+<div class="page" id="p4">
+  <div class="grid g4">
+    <div class="kpi"><div class="lab">花腹鯖 2024 產量 <span class="jp">ゴマサバ</span></div>
+      <div class="val" style="color:var(--acc)">62,915<span style="font-size:14px;color:var(--ink3)"> 公噸</span></div>
+      <div class="note">全國產量排名第 2 的魚種（僅次於遠洋正鰹）；98.9% 由近海扒網漁獲</div></div>
+    <div class="kpi"><div class="lab">花腹鯖 2024 產值</div>
+      <div class="val" style="color:var(--acc2)">31.4<span style="font-size:14px;color:var(--ink3)"> 億元</span></div>
+      <div class="note">平均單價 <b>49.9 元/公斤</b>，較 2021 年報導的 31–35 元明顯上升</div></div>
+    <div class="kpi"><div class="lab">扒網 2024 總漁獲</div>
+      <div class="val">93,948<span style="font-size:14px;color:var(--ink3)"> 公噸</span></div>
+      <div class="note">占全國近海漁業（147,298 公噸）的 <b>63.8%</b>；產值 44.3 億元</div></div>
+    <div class="kpi"><div class="lab">東北海區 TAC <span class="jp">2024 起</span></div>
+      <div class="val" style="color:var(--ok)">90,000<span style="font-size:14px;color:var(--ink3)"> 公噸</span></div>
+      <div class="note">2024 年扒網鯖鰺類實際漁獲約 75,740 公噸，約為 TAC 的 <b>84%</b></div></div>
+  </div>
+
+  <div class="sec-title">2024 年 鯖鰺漁業細部結構</div>
+  <div class="grid g2">
+    <div class="card"><h3>扒網漁獲組成 <span class="jp">2024</span></h3>
+      <div class="sub">扒網雖名為「鯖鰺漁業」，實際上鯖類就占 78%。花腹鯖 62,201 公噸為絕對主力，白腹鯖歸入「其他鯖科」約 11,288 公噸</div>
+      <div class="chartbox"><canvas id="c_tw_panet"></canvas></div></div>
+    <div class="card"><h3>花腹鯖 縣市別產量與單價 <span class="jp">2024</span></h3>
+      <div class="sub">基隆、宜蘭、新北三縣市合計 62,670 公噸，占全國 <b>99.6%</b>。三地單價差距懸殊：基隆 62.7 元/kg vs 新北 30.0 元/kg，反映漁獲規格與銷路結構差異</div>
+      <div class="chartbox"><canvas id="c_tw_county"></canvas></div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>花腹鯖 縣市別明細</h3>
+      <table id="t_tw_county"></table></div>
+    <div class="card"><h3>真鰺（マアジ）縣市別 <span class="jp">2024</span></h3>
+      <div class="sub">全國 14,825 公噸／5.07 億元，平均單價 34.2 元/公斤。同樣集中於基隆、新北、宜蘭（合計 94%）</div>
+      <table id="t_tw_maaji"></table></div>
+  </div>
+
+  <div class="sec-title">漁法演進：從大型圍網到扒網 <span class="jp">漁業署資料</span></div>
+  <div class="grid g2">
+    <div class="card"><h3>扒網（三腳虎）的技術本質</h3>
+      <ul class="tight">
+        <li><b>由來：</b>漁業署說明，扒網是由<b>巾著網改良</b>而來的漁法</li>
+        <li><b>特性：</b>構造簡單、操作靈活、省人力，<b style="color:var(--acc2)">漁獲效率極高，短時間內即可捕獲大量魚群</b>——效率優勢同時也是資源壓力的來源</li>
+        <li><b>大型圍網退場原因：</b>人力需求高、耗油、船齡老舊，逐漸被扒網取代</li>
+        <li><b>資源警訊：</b>漁業署指出扒網興起後「漁獲量呈現下降趨勢，並有<b>漁獲體長下降、成熟年齡提早</b>之現象，顯示有過漁疑慮」</li>
+        <li><b>魚種組成：</b>我國鯖鰺資源包括<b>花腹鯖、白腹鯖及真鰺</b>三種；2013 年時花腹鯖已出現體長變小、成熟年齡降低的過漁徵兆，成為當年 2 月發布《鯖鰺漁業管理辦法》的直接依據</li>
+        <li><b>跨界洄游：</b>漁業署明確定位鯖鰺為<b>跨界洄游魚種</b>，廣泛分布於臺、日、韓、中國大陸水域，臺灣以東北部海域為主要作業漁場</li>
+      </ul>
+    </div>
+    <div class="card"><h3>大型圍網轉型單船鯖鰺圍網措施</h3>
+      <ul class="tight">
+        <li><b>轉型內容：</b>漁業人得在<b>原有船團總噸位內</b>，申請建造 2 艘不得低於 <b>200 噸</b>的單船鯖鰺圍網作業船</li>
+        <li><b>財政支持：</b>政府於實施後 5 年內得對申請轉型之漁業人提供貸款</li>
+        <li><b>時程要求：</b>申請人應於前 3 年內完成第一艘轉型汰建，後 2 年完成第二艘</li>
+        <li><b>政策脈絡：</b>此措施是大型圍網船組 2013 年全數退役的制度配套，目的在於以較少船數、較大單船規模維持產能，同時降低總體漁撈努力量</li>
+      </ul>
+      <div class="note-box" style="margin-top:12px"><b>責任制漁業（漁業署定義）：</b>在維護漁業永續利用的前提下從事漁業。執行方法包括保護漁業資源棲息地、促進漁業資源品質維持、記錄漁產品產銷履歷、進行漁業科學研究，以及採取<b>預警式處理</b>。鯖鰺漁業的納管是我國沿近海責任制漁業的代表案例。</div>
+    </div>
+  </div>
+
+  <div class="sec-title">鯖科（Scombridae）在臺灣漁業的地位</div>
+  <div class="card">
+    <h3>2024 年鯖科各魚種產量 <span class="jp">全國合計 430,399 公噸</span></h3>
+    <div class="sub">鯖科（含鯖、鰹、鰆、鮪）為臺灣產量最大的魚類科別，占全國漁獲 41.4%。其中遠洋鰹鮪類為大宗，<b>花腹鯖是唯一以沿近海為主的大宗鯖科魚種</b></div>
+    <div class="chartbox"><canvas id="c_tw_saba"></canvas></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>臺灣鯖鰺資源的關鍵事實</h3>
+      <ul class="tight">
+        <li><b>魚體變小、尾數變多：</b>漁業署副署長陳建佑（2023.12）指出「近年國內鯖鰺漁業捕撈量（重量）未減少，但因魚體有變小趨勢，顯示實際捕撈數量（<b>尾數</b>）反而變多」——這是重量統計無法呈現的資源警訊</li>
+        <li><b>全球共同趨勢：</b>鯖鰺魚類變小是全球現象，海水平均溫度上升促使攝食減少、魚體變小（與日本 FRA 對「低成長化」的判定方向一致）</li>
+        <li><b>水溫上升幅度：</b>1980–2022 年臺灣附近水域水溫上升超過 1°C；漁場海域較往年平均高 0.7–0.8°C，部分海域超過 1–2°C（呂學榮教授）</li>
+        <li><b>黑潮異常機制：</b>黑潮暖水未如期於 3–4 月退出，一方面阻擋北方喜冷水鯖魚南下，另一方面壓制帶來營養鹽的湧升流，導致餌料稀缺——解剖宜蘭外海鯖魚證實胃內食物不足</li>
+        <li><b>產卵場：</b>水試所以日魚卵生產模式（DEPM）調查，確認宜蘭灣為花腹鯖、白腹鯖及日本竹筴魚在臺灣海域的產卵場之一</li>
+        <li><b>TAC 的另一動機：</b>除資源永續外，漁業署亦指出「加工廠數量減少、處理量能不足」，總量管制同時具有產銷平衡功能</li>
+      </ul>
+    </div>
+    <div class="card"><h3>產業與供應鏈</h3>
+      <ul class="tight">
+        <li><b>船隊規模：</b>2020 年首批金級「海洋之心生態標章」授予南方澳鯖魚扒網友善船隊 <b>74 艘</b>與澳底鯖魚扒網友善船隊 <b>7 艘</b>，約占東海漁場作業扒網漁船的 77%</li>
+        <li><b>納管比例：</b>《鯖鰺漁業管理辦法》將占全國鯖魚捕撈量 96–99% 的扒網漁船全數納管，強制 VMS 與卸魚申報</li>
+        <li><b>規格與去向：</b>≥20–22 cm／≥200 g 且鮮度足夠 → 鹽鯖、鯖魚片、罐頭；17–20 cm → 罐頭或鮪延繩釣餌料；&lt;17 cm → 外銷東南亞小罐頭，或作石斑等肉食性魚類生餌、乾燥磨成魚粉</li>
+        <li><b>餌料飼料占比：</b>呂學榮教授推估作為魚餌與飼料者約 1–2 萬公噸，占總產量的 1/4–1/3</li>
+        <li><b>南方澳的歷史：</b>1970 年代引進日本大型圍網船組（俗稱「大組」），單一船隊一日可捕百噸；南方澳曾一度為全世界人口密度最高的區域，鯖魚年漁獲約 10 萬公噸</li>
+        <li><b>永續評級：</b>「臺灣海鮮選擇指南」中鯖鰺目前列為<b>綠燈</b>（建議食用）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 管理 ===== -->
+<div class="page" id="p5">
+  <div class="sec-title">管理基準值與 ABC</div>
+  <div class="card">
+    <table>
+      <tr><th style="width:26%">項目</th><th>マサバ太平洋系群</th><th>マサバ対馬暖流系群</th></tr>
+      <tr><td>評估模型</td><td>狀態空間資源評估模型 <span class="jp">SAM</span></td><td>調諧世代解析 <span class="jp">Ridge VPA</span></td></tr>
+      <tr><td>漁期年定義</td><td>7 月～翌年 6 月</td><td>曆年（1–12 月）</td></tr>
+      <tr><td>管理規則類型</td><td>1B 規則（Fmsy 代替值 F40%SPR）</td><td>1A 規則（真 MSY 基準）</td></tr>
+      <tr><td>目標管理基準值</td><td>SBmsy proxy＝<b>48.2 萬噸</b></td><td>SBmsy＝<b>33.0 萬噸</b></td></tr>
+      <tr><td>限界管理基準值</td><td>0.1SB₀＝<b>14.2 萬噸</b></td><td>親魚量最小觀測值</td></tr>
+      <tr><td>禁漁水準</td><td>親魚量 0 噸</td><td>MSY 的 10% 漁獲量對應之親魚量</td></tr>
+      <tr><td>調整係數 β</td><td>0.9</td><td>0.95</td></tr>
+      <tr><td>MSY（或代替值）</td><td>22.3 萬噸</td><td>26.7 萬噸</td></tr>
+      <tr><td>2024 親魚量／基準</td><td><span class="pill p-bad">0.20 倍</span> 低於限界管理基準值</td><td><span class="pill p-ok">1.03 倍</span> 高於目標管理基準值</td></tr>
+      <tr><td>2024 漁獲壓／Fmsy</td><td><span class="pill p-bad">2.07 倍</span></td><td><span class="pill p-ok">0.83 倍</span></td></tr>
+      <tr><td>親魚量動向</td><td><span class="pill p-bad">減少</span></td><td><span class="pill p-ok">增加</span></td></tr>
+      <tr><td><b>2026 年 ABC</b></td><td><b style="color:var(--warn)">6.2 萬噸</b>（漁期年）</td><td><b style="color:var(--ok)">30.4 萬噸</b>（曆年）／29.7 萬噸（漁期年）</td></tr>
+      <tr><td>10 年後達標機率</td><td>2035 漁期親魚量預測 93.3 萬噸，達目標管理基準值機率 52%</td><td>2035 年親魚量預測 35.0 萬噸，達標機率 62%、超過限界基準值 100%</td></tr>
+    </table>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>日本 太平洋系群「不漁」成因（FRA 第2報，2025.11.11）</h3>
+      <ul class="tight">
+        <li><b>①資源量本身減少：</b>2019 漁期後未再出現高加入，加上外國漁獲使高漁獲壓持續</li>
+        <li><b>②來遊變化：</b>親潮弱化＋黑潮續流極端北偏，常磐・三陸海域持續極高溫，鯖魚難以南下至日本近海漁場。<b>2025 年 4 月黑潮大蛇行終結</b>，該海域顯著高溫化已解消，後續動向受矚目</li>
+        <li><b>③產卵量急減與產卵場移動：</b>2023 年後產卵量急減；產卵場由伊豆諸島周邊向東北方向擴散，三陸沖也開始出現產卵</li>
+        <li><b>④低成長化：</b>餌料環境惡化（低營養價值溫帶性小型餌料生物增加）→ 成熟延遲 → 親魚量難以恢復</li>
+      </ul>
+    </div>
+    <div class="card"><h3>台灣《鯖鰺漁業管理辦法》（2013 年訂定）</h3>
+      <ul class="tight">
+        <li><b>禁漁期（產出前管理）：</b>①每年 6/1–6/30（幼魚成長期）②農曆 12/29–翌年正月 18 日（產卵期，約 20 天）</li>
+        <li><b>禁漁區：</b>100 公噸以下漁船不得進入 6 浬內捕撈；100 公噸以上漁船不得進入 12 浬內作業</li>
+        <li><b>投入型管理：</b>船組總量管制、特定漁業經營許可證照、強制裝設 VMS 船舶監控系統、卸魚申報</li>
+        <li><b style="color:var(--acc2)">產出型管理（2024.1.1 上路）：</b>東北海區鯖鰺漁業<b>年度總容許漁獲量 9 萬公噸</b>＋個別漁船配額；配額<b>不得轉讓</b>；漁獲量達 TAC 的 90% 時，中央主管機關得公告停止東北海區捕撈。TAC 依年度海洋環境變化、科研評估資源水準及漁獲物過磅紀錄訂定</li>
+        <li><b>2024 執行概況：</b>扒網鯖鰺類實際漁獲約 75,740 公噸（花腹鯖 62,201＋其他鯖科 11,288＋鰺科 2,251），約為 TAC 的 84%</li>
+        <li><b>共管機制：</b>產官學組成鯖鰺漁業管理諮詢小組；2022 年鯖鰺漁業協會通過第一個具罰則的自主管理公約</li>
+        <li><b>學者建議：</b>呂學榮教授評估總量限制在 5–6 萬公噸可行，前提是徹底落實卸魚申報與過磅公開拍賣</li>
+        <li><b>生態標章：</b>南方澳與澳底鯖魚扒網友善船隊為首批取得金級「海洋之心生態標章」；台灣海鮮選擇指南中鯖鰺目前為綠燈</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec-title">《鯖鰺漁業管理辦法》條文架構 <span class="jp">全國法規資料庫．漁業署主管</span></div>
+  <div class="card">
+    <table>
+      <tr><th style="width:13%">條次</th><th style="width:20%">管理面向</th><th>具體規定</th></tr>
+      <tr><td>第 2 條</td><td>範圍定義</td><td><b>鯖鰺漁業</b>＝漁船以扒網或圍網漁具捕撈鯖、鰺為主要漁獲種類之漁業；<b>鯖鰺漁船</b>包括網船、燈船、運搬船；<b>東北海區</b>＝北緯 24 度以北之海域</td></tr>
+      <tr><td>第 3–6 條</td><td>船數總量管制</td><td>採「落日條款」式封閉名單：僅辦法施行前已核准經營鯖鰺圍網／扒網者，或施行前經核准經營棒受網、焚寄網且已配備扒網及滾筒式揚網機者，於施行日起 30 日內申請並經實地審查，方得兼營扒網漁業</td></tr>
+      <tr><td>第 7 條</td><td>禁漁區</td><td>鯖鰺漁船禁止於臺灣本島距岸 <b>6 浬內</b>從事集魚、圍捕、汲撈及漁獲轉載；總噸位 <b>100 以上</b>者禁止於距岸 <b>12 浬內</b>作業</td></tr>
+      <tr><td>第 8–9 條</td><td>漁具管制</td><td>未經核准經營鯖鰺漁業之漁船，禁止攜帶捕撈鯖鰺用之扒網、圍網漁具出港；燈船、運搬船禁止裝設扒網或圍網漁具設備</td></tr>
+      <tr><td>第 10 條</td><td>禁漁期</td><td>東北海區每年 <b>6/1–6/30</b>（幼魚成長期）及<b>農曆 12/29–翌年正月 18 日</b>（產卵期）禁止作業</td></tr>
+      <tr><td>第 12、19 條</td><td>船位監控 VMS</td><td>應裝設船位回報器，出港前須經海巡機關向岸上接收中心確認正常運作；出港後<b>每小時回報船位</b>。接收中心收不到資料時應即通報，主管機關令限期返港修復，期間改用通訊設備每小時回報，未修復不得出港</td></tr>
+      <tr><td>第 14 條</td><td>船團編制</td><td>每組船團最多 <b>1 艘網船＋2 艘燈船＋1 艘運搬船</b>；東北海區作業許可期間最長 2 年，且不得逾漁業執照有效期限</td></tr>
+      <tr><td>第 20 條</td><td>漁撈日誌</td><td>網船出港作業應填寫漁撈日誌，於作業結束進港日起 <b>3 日內</b>送交當地區漁會，區漁會 1 個月內轉送主管機關</td></tr>
+      <tr><td>第 21 條</td><td>指定卸魚港<br>與全數秤量</td><td>限於 <b>12 處指定漁港</b>卸魚：宜蘭南方澳；新北澳底、深澳、野柳；基隆八斗子、正濱；臺南將軍、安平；高雄興達、前鎮、小港臨海新村、中芸。卸魚後應填卸魚聲明書；區漁會設有磅秤者<b>漁獲應全數秤量</b>並保存紀錄供查核</td></tr>
+      <tr><td>第 22 條</td><td>公開交易</td><td>鯖鰺漁獲<b>應於區漁會以拍賣、議價、標價或投標方式公開交易</b>；區漁會按月彙送交易資料。此為 TAC 得以落實的資料基礎</td></tr>
+      <tr><td>第 23 條</td><td>觀察員制度</td><td>應接受中央主管機關指派之<b>觀察員隨船觀察</b>；船方須提供相當於幹部船員之生活照顧、獨立通訊設備、每日漁撈日誌，並協助蒐集研究用漁獲樣本，不得規避妨礙</td></tr>
+      <tr><td>第 24–25 條</td><td>罰則</td><td>違規者依《漁業法》第 10 條收回漁業證照、幹部船員執業證書或船員手冊 <b>1 年以下</b>，情節重大得撤銷；違反漁具、船團、VMS、日誌、卸魚港、秤量、公開交易等規定者，處 <b>3 萬–15 萬元</b>罰鍰。<span class="jp">註：收回證照之執行期間不計入每年 6/1–6/30，避免業者以禁漁期折抵處分</span></td></tr>
+    </table>
+    <div style="font-size:11px;color:var(--ink3);margin-top:10px;line-height:1.7">
+    上表依民國 108 年 1 月 7 日修正版本整理。年度總容許漁獲量（TAC 9 萬公噸）與個別漁船配額係後續修法增訂，自民國 113（2024）年 1 月 1 日施行。</div>
+  </div>
+
+  <div class="note-box"><b>跨境資源的共同課題：</b>兩個日本系群的評估都指出同一個結構性缺口——中國漁獲無法納入。對馬暖流系群評估僅考慮日韓漁獲，但中國東海鯖類漁獲 2024 年達 24.8 萬噸；太平洋系群雖已納入 NPFC 通報之中俄漁獲，但內容仍屬片段報告，且 IUU 漁獲無法量化。台灣位於同一洄游系統最南端，資源狀態同樣受制於上游各國的漁撈行為，跨國協調的資源評估與管理是共同前提。</div>
+</div>
+
+<!-- ===== 資料來源 ===== -->
+<div class="page" id="p6">
+  <div class="sec-title">資料來源</div>
+  <div class="grid g2">
+    <div class="card"><h3>日本 水產研究・教育機構（FRA）</h3>
+      <ul class="tight">
+        <li><a href="https://www.fra.go.jp/shigen/fisheries_resources/meeting/stock_assessment_meeting/2025/files/sa2025-sc17/fra-sa2025-sc17-01.pdf" target="_blank">FRA-SA2025-SC17-01 令和7（2025）年度マサバ太平洋系群の資源評価</a><br><span class="jp">表3-1 漁業種別・海区別・国別漁獲量、表3-2 年齢別漁獲尾数、近5年與將來預測值</span></li>
+        <li><a href="https://www.fra.go.jp/shigen/fisheries_resources/meeting/stock_assessment_meeting/2025/files/sa2025-sc18/fra-sa2025-sc18-01.pdf" target="_blank">FRA-SA2025-SC18-01 令和7（2025）年度マサバ対馬暖流系群の資源評価</a><br><span class="jp">表3-2 日韓漁獲量與努力量、表4-1 資源解析結果（1973–2024 完整序列）</span></li>
+        <li><a href="https://www.fra.go.jp/shigen/fisheries_resources/etc/files/masaba_furyou_20251111.pdf" target="_blank">最近のマサバ（太平洋）の資源の状況及び不漁の要因について（第2報）</a> 2025.11.11</li>
+        <li><a href="https://www.fra.go.jp/shigen/fisheries_resources/meeting/stock_assessment_meeting/2025/sa2025-sc17.html" target="_blank">令和7年度 マサバ・ゴマサバ太平洋系群資源評価会議</a></li>
+        <li><a href="https://www.fra.go.jp/" target="_blank">水産研究・教育機構 首頁</a>｜<a href="https://abchan.fra.go.jp/" target="_blank">わが国周辺の水産資源の評価</a></li>
+      </ul>
+    </div>
+    <div class="card"><h3>台灣</h3>
+      <ul class="tight">
+        <li><a href="https://www.agriharvest.tw/archives/60821" target="_blank">農傳媒｜鯖鰺禁漁助長大 2種鯖魚體型趨勢跳級</a>（漁業署委託調查體長數據）</li>
+        <li><a href="https://www.newsmarket.com.tw/blog/174272/" target="_blank">上下游｜鯖魚危機01：捕獲量重挫九年新低</a>（2019 年 42,660 公噸、體長長期變化、呂學榮教授訪談）</li>
+        <li><a href="https://e-info.org.tw/node/234152" target="_blank">環境資訊中心／公視我們的島｜永續鯖鰺大挑戰</a>（2013→2020 體長變化、鯖鰺產業規模）</li>
+        <li><a href="https://e-info.org.tw/node/115223" target="_blank">環境資訊中心｜永續海鱻食堂：為什麼外國的鯖魚比較肥？</a></li>
+        <li><a href="https://www.fa.gov.tw/view.php?theme=FisheriesAct_LAW&subtheme=&id=10" target="_blank">農業部漁業署｜鯖鰺漁業管理辦法</a></li>
+        <li><a href="https://www.fa.gov.tw/list.php?theme=FS_AR" target="_blank">農業部漁業署｜漁業統計年報</a>（民國 113 年／2024）<br><span class="jp">本儀表板臺灣數據直接取自年報 PDF：表 6 歷年漁業生產量值（1959–2024）、表 7-(1) 漁業種類別魚類別、表 7-(3) 縣市別魚類別</span></li>
+        <li><a href="https://www.agriharvest.tw/archives/110962" target="_blank">農傳媒｜明年元旦鯖鰺捕撈限量</a>（2024 年起 TAC 9 萬公噸、漁業署副署長陳建佑談魚體變小）</li>
+        <li><a href="https://e-info.org.tw/node/228337" target="_blank">環境資訊中心｜漁業署頒發首批金級「海洋之心生態標章」</a>（南方澳 74 艘、澳底 7 艘）</li>
+        <li><a href="https://www.agriharvest.tw/archives/95668/" target="_blank">農傳媒｜水試所在宜蘭灣採集到花腹鯖、白腹鯖、竹筴魚魚卵</a>（日魚卵生產模式 DEPM 資源評估）</li>
+      </ul>
+      <h3 style="margin-top:18px">農業部漁業署 fa.gov.tw</h3>
+      <ul class="tight">
+        <li><a href="https://www.fa.gov.tw/view.php?theme=FisheriesAct_LAW&subtheme=&id=10" target="_blank">鯖鰺漁業管理辦法</a>｜<a href="https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=M0050046" target="_blank">全國法規資料庫全文</a></li>
+        <li><a href="https://www.fa.gov.tw/view.php?theme=Frequently_Asked_Questions&subtheme=&id=31" target="_blank">鯖鰺漁業管理辦法常見問答集</a>（扒網源自巾著網改良、東北海區許可、卸魚與觀察員制度）</li>
+        <li><a href="https://www.fa.gov.tw/cht/NewsPaper/content.aspx?id=972&chk=202302a6-d082-4e0d-bde5-c448ab225a06" target="_blank">新聞稿｜休養生息 鯖魚永續，漁業署呼籲漁友遵守 6 月鯖鰺漁業禁漁期</a>（花腹鯖體長變小、成熟年齡降低之過漁徵兆）</li>
+        <li><a href="https://fa.gov.tw/cht/LawsRuleFisheries/content.aspx?chk=3368D8BC-FDD4-4B6D-9042-59A696300080&id=119&param=" target="_blank">鯖鰺大型圍網漁業轉型單船鯖鰺圍網漁業措施</a></li>
+        <li><a href="https://fa.gov.tw/view.php?id=450&subtheme=&theme=FisheriesAct_RULE" target="_blank">鯖鰺漁船漁撈日誌漁獲秤量卸魚聲明及公開交易資料繳交執行要點</a></li>
+        <li><a href="https://www.fa.gov.tw/view.php?theme=Coastal_fisheries&subtheme=&id=1" target="_blank">沿近海漁業管理及責任制漁業之實踐</a>（大型圍網被扒網取代之原因、過漁疑慮）</li>
+        <li><a href="https://www.fa.gov.tw/cht/ResourceCoastal/content.aspx?id=6&chk=92277b43-300b-4168-b728-0a28f8d2285a&param=pn%3D1" target="_blank">責任漁業制度</a>｜<a href="https://fa.gov.tw/cht/GovReport/content.aspx?chk=3888B0F5-F4DF-4E63-9FCE-75A888C9C05C&id=358&param=" target="_blank">研究報告｜臺灣周邊海域花腹鯖之資源評估分析</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="note-box"><b>資料完整性說明：</b>日本兩系群的漁獲量、年齡別漁獲尾數、資源量、親魚量、加入量等皆為 FRA 令和7年度資源評價報告表格之逐年完整轉錄。太平洋系群的資源量／親魚量因報告未附完整年別表，本儀表板僅呈現報告內文明確記載之年份數值並標示為錨點，未做內插推估。臺灣部分已改用使用者提供之《民國 113 年漁業統計年報》PDF 原始表格：漁法別長期序列（1959–2024）與 2024 年魚種別／縣市別細部資料皆為年報直接轉錄。<b>惟年報「主要魚類」欄位未單列白腹鯖（代碼 53002），其產量歸入「其他鯖科（53ZZZ）」，故本儀表板中白腹鯖僅能以該欄位近似表示</b>；另年報無逐年魚種別序列，故臺灣的「花腹鯖／白腹鯖」逐年變化仍以漁法別（鯖鰺圍網＋扒網）作為代理指標。<br><b>關於 fa.gov.tw：</b>該站為前端動態產生（JavaScript 渲染），直接抓取僅取得空白頁面，因此漁業署的政策與制度內容係透過搜尋索引取得摘要，並以《全國法規資料庫》之《鯖鰺漁業管理辦法》法條全文交叉查證後編寫；上方已附各原始頁面連結供查閱。</div>
+  <footer>
+    製作單位：農業部水產試驗所｜製作日期：2026-07-28｜所有數值均可回溯至上列原始文件。太平洋系群採漁期年（7月～翌年6月），對馬暖流系群與台灣採曆年，比較時請留意期間定義差異。<br>
+    日文術語對照：マサバ＝白腹鯖（Scomber japonicus）／ゴマサバ＝花腹鯖（S. australasicus）／親魚量＝產卵親魚生物量 SSB／加入量＝新生族群加入尾數／漁獲割合＝漁獲量占資源量比例／%SPR＝加入量當量親魚量比／まき網＝圍網／たもすくい＝抄網（火光利用）／定置網＝定置網
+  </footer>
+</div>
+</div>
+
+<script>
+const D = {"pac_years": [1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], "pac_total": [865471, 855109, 845177, 821531, 889406, 896611, 715078, 1070984, 1427837, 1275041, 637015, 398394, 347229, 378130, 542636, 422432, 626925, 326549, 258616, 125291, 27767, 26385, 81493, 397959, 117336, 140569, 269122, 318407, 114796, 76512, 91192, 52896, 46745, 75559, 181144, 226256, 245091, 188373, 176360, 130228, 127877, 102020, 125645, 220671, 303965, 456676, 465121, 532303, 513074, 410784, 438792, 376256, 231547, 132228, 122876], "pac_jp": [833471, 793109, 722572, 638536, 649406, 722805, 570435, 912950, 1207487, 1104013, 589399, 356046, 317275, 364628, 513119, 419724, 585023, 305635, 250914, 125291, 27767, 26385, 81493, 397959, 117336, 140569, 269122, 318407, 114796, 76512, 91192, 52896, 46745, 75559, 181144, 226256, 245091, 188373, 176360, 130228, 127877, 102020, 125645, 220671, 282318, 329777, 330043, 332271, 300773, 266835, 279005, 187098, 98511, 74677, 47618], "pac_ru": [32000, 62000, 122604, 182996, 240000, 173806, 144643, 158034, 220350, 171028, 47616, 42348, 29954, 13502, 29517, 2708, 41902, 20914, 7703, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 423, 9242, 53792, 98812, 86592, 81384, 87388, 49894, 15540, 7233], "pac_cn": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21612, 126476, 125835, 146240, 113489, 57357, 78403, 101770, 83142, 42011, 68025], "pac_kita": [733494, 715905, 626753, 527106, 529706, 540113, 345519, 722035, 974295, 911006, 454159, 298344, 254320, 338760, 479173, 384355, 540716, 259765, 223576, 101051, 7886, 5321, 46727, 348663, 76263, 104151, 217419, 275169, 99789, 51193, 72102, 40432, 35753, 48429, 143135, 193026, 202515, 151563, 144864, 106561, 103747, 78163, 102865, 191576, 233560, 289416, 262463, 240934, 165742, 158584, 164757, 92650, 28985, 20401, 17428], "pac_teichi": [25319, 14115, 12463, 20188, 24345, 46915, 29261, 15933, 17734, 23234, 15900, 11811, 10854, 8299, 13738, 5959, 6263, 5214, 5053, 1747, 3615, 1958, 20165, 27732, 23039, 25503, 35861, 27874, 10079, 18581, 15236, 8616, 8492, 21822, 29665, 27596, 35291, 31996, 25159, 12442, 14642, 5369, 7611, 16018, 17620, 17294, 18122, 27124, 39197, 42369, 45043, 69842, 57773, 48618, 24786], "pac_kakou": [52415, 31986, 47507, 49180, 47244, 89945, 154132, 133046, 177393, 130929, 73075, 9855, 35196, 915, 4723, 14196, 16253, 21442, 7095, 8420, 2088, 4924, 2505, 1596, 1757, 1591, 43, 1661, 436, 43, 0, 0, 44, 84, 189, 388, 2950, 721, 1065, 939, 2540, 2772, 2105, 2766, 2939, 4506, 1605, 2910, 3805, 4313, 3287, 1378, 559, 305, 181], "pac_chu": [4072, 7253, 7414, 7308, 4535, 6370, 5468, 9250, 3942, 4347, 3342, 4036, 6325, 6147, 5473, 11457, 12343, 7658, 9851, 7610, 6784, 5129, 4766, 15202, 12011, 4862, 3655, 9579, 3052, 3515, 2275, 1390, 1476, 920, 6257, 1769, 2492, 1690, 2701, 5792, 4127, 13048, 9020, 7730, 23936, 15689, 39720, 37531, 54727, 33724, 43120, 14850, 2817, 1776, 1405], "pac_nan": [18171, 23849, 28435, 34753, 43577, 39461, 36055, 32686, 34123, 34497, 42924, 32001, 10580, 10506, 10011, 3758, 9448, 11555, 5338, 6463, 7395, 9052, 7329, 4766, 4267, 4461, 12145, 4124, 1440, 3181, 1579, 2458, 979, 4304, 1898, 3477, 1842, 2402, 2571, 4494, 2821, 2668, 4044, 2581, 4263, 2872, 8133, 23771, 37302, 27844, 22797, 8378, 8377, 3577, 3817], "pac_age": [[834.2, 334.0, 29.0, 93.2, 351.1, 1254.2, 631.5, 539.0, 1039.1, 208.2, 199.0, 266.2, 123.1, 250.4, 548.5, 377.7, 182.7, 72.3, 66.9, 33.8, 28.7, 52.5, 296.7, 96.5, 128.0, 362.1, 1578.2, 147.2, 31.6, 144.6, 251.8, 7.1, 243.8, 65.7, 767.1, 41.5, 6.3, 424.9, 59.6, 173.8, 79.7, 28.0, 62.7, 296.6, 175.8, 312.8, 326.3, 302.9, 446.2, 86.5, 359.3, 308.3, 187.8, 137.2, 65.2], [1201.5, 814.6, 1846.5, 647.1, 182.0, 387.9, 923.3, 2083.0, 1255.8, 1918.5, 472.1, 184.5, 323.5, 284.1, 544.0, 397.6, 1336.0, 315.6, 106.5, 23.9, 6.0, 8.1, 10.7, 957.2, 98.1, 123.3, 193.0, 884.6, 68.6, 17.2, 85.5, 68.8, 16.6, 205.6, 86.7, 522.9, 61.5, 53.2, 274.9, 34.7, 162.9, 88.2, 51.9, 247.8, 889.1, 232.5, 338.5, 579.6, 184.1, 326.8, 162.0, 360.5, 217.8, 194.0, 80.3], [1037.3, 888.0, 680.7, 1210.6, 794.1, 560.1, 547.8, 726.8, 1468.4, 1312.2, 286.3, 142.0, 301.4, 440.2, 358.3, 252.5, 554.8, 351.6, 252.8, 53.0, 6.0, 10.7, 13.1, 239.7, 98.0, 48.7, 22.7, 60.9, 177.4, 24.1, 13.3, 40.1, 5.9, 32.3, 72.0, 52.7, 376.3, 69.5, 46.7, 127.1, 54.0, 87.3, 90.3, 75.5, 156.2, 1302.3, 279.5, 290.2, 343.9, 273.7, 517.3, 360.9, 162.4, 180.7, 134.2], [364.9, 288.5, 241.9, 547.6, 993.8, 617.5, 445.8, 471.9, 640.8, 644.7, 419.2, 148.7, 159.7, 225.4, 208.1, 189.9, 275.9, 170.4, 253.1, 70.5, 10.6, 8.1, 12.0, 39.1, 28.4, 27.6, 19.7, 13.3, 13.2, 40.6, 10.8, 5.3, 6.5, 6.5, 11.4, 32.0, 24.9, 157.1, 44.4, 23.5, 37.3, 21.3, 66.4, 76.5, 59.6, 102.8, 940.9, 389.0, 323.6, 210.1, 281.8, 255.0, 152.7, 55.8, 69.6], [127.5, 103.7, 73.1, 183.1, 310.1, 391.2, 251.3, 236.3, 338.1, 158.4, 309.8, 193.9, 80.7, 76.2, 89.8, 74.5, 78.9, 41.2, 26.4, 77.2, 6.3, 4.7, 6.5, 5.2, 4.8, 8.9, 9.7, 6.3, 1.1, 10.1, 13.6, 3.8, 3.6, 2.0, 4.3, 13.2, 7.5, 3.7, 51.1, 13.1, 9.2, 6.6, 20.9, 25.1, 16.8, 17.9, 29.4, 523.7, 313.1, 161.7, 167.6, 113.1, 84.8, 21.0, 28.2], [48.9, 56.4, 35.3, 46.1, 26.4, 164.6, 41.6, 81.8, 173.0, 80.2, 126.5, 114.8, 70.5, 43.6, 45.8, 38.3, 27.7, 19.2, 4.1, 4.0, 4.2, 2.1, 10.3, 1.7, 1.7, 3.5, 4.5, 3.8, 0.3, 1.3, 0.8, 3.0, 3.2, 1.1, 1.4, 0.9, 1.8, 0.8, 3.1, 15.0, 5.7, 2.1, 4.0, 5.0, 16.4, 10.4, 15.1, 47.3, 232.1, 114.4, 119.4, 69.0, 42.4, 19.4, 18.6], [41.4, 18.7, 17.6, 12.2, 4.4, 45.9, 3.6, 15.6, 16.6, 12.8, 11.3, 13.4, 12.8, 23.2, 17.7, 21.4, 9.1, 6.1, 1.7, 0.6, 0.8, 0.3, 8.0, 1.6, 1.9, 1.7, 2.7, 2.3, 0.1, 0.4, 0.3, 2.4, 1.9, 1.0, 1.3, 1.1, 0.5, 0.2, 1.3, 1.3, 0.6, 0.1, 0.6, 2.3, 0.8, 9.8, 12.4, 13.3, 45.9, 206.0, 121.9, 91.7, 42.3, 13.9, 12.5]], "tsu_years": [1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], "tsu_jp": [26.9, 34.7, 29.0, 26.9, 29.2, 29.8, 27.0, 29.7, 24.4, 28.1, 24.2, 19.8, 20.4, 19.3, 19.4, 24.0, 28.3, 13.1, 15.3, 14.3, 23.5, 33.9, 20.8, 41.1, 21.1, 16.5, 10.8, 8.9, 7.8, 8.7, 8.4, 8.5, 9.2, 9.2, 10.8, 12.3, 13.3, 12.0, 11.4, 10.9, 6.5, 8.9, 11.6, 9.2, 11.0, 14.4, 9.6, 7.9, 8.8, 9.8, 10.1, 13.5], "tsu_kr": [6.1, 7.2, 6.5, 9.5, 10.1, 7.9, 10.4, 5.7, 10.5, 9.3, 11.0, 9.3, 6.0, 9.7, 9.8, 14.9, 15.4, 9.1, 8.9, 11.4, 16.8, 20.5, 19.2, 41.0, 15.8, 16.3, 15.7, 12.6, 19.9, 13.9, 11.9, 17.8, 12.0, 9.9, 14.3, 18.7, 16.8, 9.4, 13.9, 12.5, 10.2, 12.7, 13.2, 13.3, 10.4, 14.2, 10.1, 7.7, 12.2, 11.1, 12.0, 12.5], "tsu_eff": [12.399, 12.22, 13.348, 14.602, 14.182, 14.061, 14.761, 14.373, 14.821, 16.487, 15.761, 16.49, 17.441, 16.93, 18.03, 17.968, 18.093, 17.222, 16.577, 15.929, 16.127, 14.994, 13.58, 13.412, 11.858, 11.894, 11.005, 10.646, 10.436, 9.155, 8.754, 8.517, 8.052, 8.478, 8.369, 7.698, 6.871, 6.863, 7.161, 6.165, 6.223, 6.222, 5.953, 5.054, 5.148, 4.71, 4.802, 4.262, 4.294, 4.49, 4.02, 4.012], "tsu_biomass": [102.6, 102.9, 94.6, 97.6, 107.0, 104.4, 112.3, 92.1, 98.5, 111.6, 105.0, 90.2, 92.6, 86.6, 125.5, 121.9, 87.6, 63.6, 73.5, 91.7, 109.8, 111.8, 129.2, 137.0, 83.2, 71.5, 61.7, 44.7, 56.1, 46.9, 46.3, 63.5, 52.2, 48.0, 62.9, 72.4, 58.4, 54.2, 57.9, 51.6, 45.8, 61.6, 59.1, 59.1, 62.8, 63.0, 50.7, 52.4, 60.7, 69.8, 77.1, 91.1], "tsu_ssb": [31.2, 38.0, 32.7, 31.6, 32.5, 36.0, 36.3, 41.5, 32.9, 34.3, 40.8, 40.6, 38.0, 38.8, 33.9, 53.3, 52.1, 25.6, 23.6, 26.5, 37.7, 40.0, 29.5, 46.8, 24.7, 24.5, 21.3, 19.1, 15.9, 13.8, 11.7, 12.7, 18.7, 17.2, 15.8, 17.4, 21.2, 14.0, 17.5, 17.4, 14.4, 15.1, 20.9, 18.5, 20.5, 25.3, 21.3, 19.4, 21.9, 23.6, 31.1, 34.0], "tsu_rec": [20.8, 17.5, 17.6, 19.1, 22.0, 19.1, 22.3, 12.0, 20.3, 23.0, 17.1, 12.8, 16.5, 12.5, 29.9, 15.8, 7.6, 11.9, 15.6, 19.6, 21.0, 21.4, 32.9, 24.6, 17.8, 13.5, 12.9, 10.5, 11.7, 9.8, 10.0, 15.2, 8.6, 9.9, 14.0, 19.4, 11.4, 14.1, 14.4, 10.7, 10.6, 16.0, 13.0, 15.0, 18.3, 12.5, 10.9, 12.0, 13.2, 19.4, 15.3, 25.6], "tsu_rps": [6.67, 4.61, 5.37, 6.05, 6.78, 5.29, 6.14, 2.9, 6.16, 6.68, 4.2, 3.16, 4.33, 3.23, 8.82, 2.96, 1.46, 4.63, 6.62, 7.4, 5.57, 5.37, 11.15, 5.25, 7.18, 5.51, 6.05, 5.5, 7.34, 7.09, 8.57, 11.94, 4.58, 5.76, 8.84, 11.16, 5.38, 10.02, 8.22, 6.12, 7.33, 10.56, 6.23, 8.11, 8.89, 4.92, 5.14, 6.19, 6.0, 8.24, 4.93, 7.53], "tsu_hr": [32, 41, 38, 37, 37, 36, 33, 38, 35, 34, 34, 32, 28, 33, 23, 32, 50, 35, 33, 28, 37, 49, 31, 60, 44, 46, 43, 48, 49, 48, 44, 42, 41, 40, 40, 43, 51, 40, 44, 45, 37, 35, 42, 38, 34, 45, 39, 30, 35, 30, 29, 29], "tsu_spr": [21.68, 18.87, 19.49, 18.94, 18.79, 20.73, 21.97, 23.45, 20.66, 21.33, 24.57, 26.46, 28.78, 25.95, 26.94, 26.7, 18.05, 24.0, 21.17, 25.91, 20.82, 12.96, 19.4, 8.31, 15.21, 14.75, 16.05, 15.73, 11.39, 12.13, 14.18, 15.42, 18.99, 18.15, 16.21, 15.29, 13.85, 17.69, 15.36, 14.82, 19.13, 19.42, 17.97, 19.7, 22.29, 15.52, 20.43, 25.67, 22.25, 25.28, 28.54, 28.87], "tsu_ffmsy": [1.15, 1.39, 1.33, 1.36, 1.35, 1.2, 1.11, 1.03, 1.21, 1.15, 0.97, 0.9, 0.79, 0.9, 0.84, 0.89, 1.38, 1.0, 1.18, 0.91, 1.14, 1.77, 1.27, 2.46, 1.66, 1.52, 1.42, 1.63, 1.84, 1.86, 1.59, 1.53, 1.25, 1.34, 1.47, 1.49, 1.83, 1.33, 1.54, 1.62, 1.29, 1.23, 1.39, 1.21, 1.07, 1.51, 1.17, 0.93, 1.07, 0.94, 0.83, 0.83], "pac_recent": [[2020, 240.2, 53.6, 48.2, 43.9, 2.1, 20.1], [2021, 199.2, 38.4, 42.6, 37.6, 2.79, 21.4], [2022, 173.9, 24.0, 29.1, 23.2, 2.76, 16.7], [2023, 118.1, 12.1, 17.9, 13.2, 2.24, 15.1], [2024, 93.0, 9.7, 14.3, 12.3, 2.07, 15.4], [2025, 106.0, 8.7, 13.2, null, 2.1, 12.5], [2026, 142.5, 11.3, 6.2, null, 0.63, 4.4]], "pac_anchor": [[1980, 225, null], [1981, null, 76], [1982, null, 58], [1990, 23.2, null], [1991, null, 5.8], [2001, 18.8, null], [2002, null, 3.9], [2004, 80, null], [2006, null, 31], [2013, 225, null], [2017, null, 75.0]], "pac_meanwt": [236.7, 341.5, 289.0, 299.8, 334.1, 262.1, 251.4, 257.8, 289.5, 294.1, 349.2, 374.6, 324.0, 281.5, 299.4, 312.5, 254.3, 334.4, 363.5, 476.4, 443.6, 305.0, 228.1, 296.8, 325.1, 244.1, 147.0, 284.7, 392.7, 321.1, 242.5, 405.3, 166.1, 240.5, 191.8, 340.6, 511.9, 265.5, 366.6, 335.2, 366.0, 436.7, 423.3, 302.8, 231.2, 229.7, 239.5, 248.0, 271.6, 297.8, 253.7, 241.4, 260.1, 212.6, 300.7], "pac_agepct": [[22.82, 13.34, 0.99, 3.4, 13.19, 36.66, 22.2, 12.97, 21.07, 4.8, 10.91, 25.03, 11.49, 18.64, 30.27, 27.94, 7.41, 7.4, 9.4, 12.85, 45.85, 60.69, 83.04, 7.2, 35.47, 62.89, 86.22, 13.16, 10.81, 60.68, 66.95, 5.44, 86.61, 20.91, 81.24, 6.25, 1.32, 59.9, 12.39, 44.74, 22.81, 11.99, 21.13, 40.7, 13.37, 15.73, 16.8, 14.11, 23.62, 6.27, 20.78, 19.78, 21.1, 22.06, 15.96], [32.87, 32.53, 63.15, 23.62, 6.84, 11.34, 32.45, 50.14, 25.46, 44.26, 25.88, 17.35, 30.19, 21.15, 30.02, 29.41, 54.2, 32.32, 14.97, 9.09, 9.58, 9.36, 2.99, 71.38, 27.18, 21.41, 10.54, 79.1, 23.47, 7.22, 22.73, 52.72, 5.9, 65.44, 9.18, 78.71, 12.84, 7.5, 57.14, 8.93, 46.62, 37.76, 17.49, 34.0, 67.63, 11.69, 17.43, 27.01, 9.75, 23.69, 9.37, 23.13, 24.47, 31.19, 19.65], [28.37, 35.46, 23.28, 44.18, 29.83, 16.37, 19.26, 17.49, 29.77, 30.27, 15.69, 13.35, 28.12, 32.77, 19.77, 18.68, 22.51, 36.01, 35.53, 20.15, 9.58, 12.37, 3.67, 17.87, 27.15, 8.46, 1.24, 5.45, 60.69, 10.11, 3.54, 30.73, 2.1, 10.28, 7.63, 7.93, 78.59, 9.8, 9.71, 32.72, 15.46, 37.37, 30.42, 10.36, 11.88, 65.49, 14.39, 13.52, 18.21, 19.84, 29.91, 23.16, 18.24, 29.05, 32.84], [9.98, 11.52, 8.27, 19.99, 37.33, 18.05, 15.67, 11.36, 12.99, 14.87, 22.98, 13.98, 14.9, 16.78, 11.48, 14.05, 11.19, 17.45, 35.57, 26.81, 16.93, 9.36, 3.36, 2.92, 7.87, 4.79, 1.08, 1.19, 4.52, 17.04, 2.87, 4.06, 2.31, 2.07, 1.21, 4.82, 5.2, 22.15, 9.23, 6.05, 10.68, 9.12, 22.37, 10.5, 4.53, 5.17, 48.45, 18.13, 17.13, 15.23, 16.3, 16.36, 17.15, 8.97, 17.03], [3.49, 4.14, 2.5, 6.68, 11.65, 11.43, 8.83, 5.69, 6.86, 3.65, 16.98, 18.23, 7.53, 5.67, 4.96, 5.51, 3.2, 4.22, 3.71, 29.35, 10.06, 5.43, 1.82, 0.39, 1.33, 1.55, 0.53, 0.56, 0.38, 4.24, 3.62, 2.91, 1.28, 0.64, 0.46, 1.99, 1.57, 0.52, 10.62, 3.37, 2.63, 2.83, 7.04, 3.44, 1.28, 0.9, 1.51, 24.4, 16.58, 11.72, 9.69, 7.26, 9.53, 3.38, 6.9], [1.34, 2.25, 1.21, 1.68, 0.99, 4.81, 1.46, 1.97, 3.51, 1.85, 6.93, 10.79, 6.58, 3.25, 2.53, 2.83, 1.12, 1.97, 0.58, 1.52, 6.71, 2.43, 2.88, 0.13, 0.47, 0.61, 0.25, 0.34, 0.1, 0.55, 0.21, 2.3, 1.14, 0.35, 0.15, 0.14, 0.38, 0.11, 0.64, 3.86, 1.63, 0.9, 1.35, 0.69, 1.25, 0.52, 0.78, 2.2, 12.29, 8.29, 6.9, 4.43, 4.76, 3.12, 4.55], [1.13, 0.75, 0.6, 0.45, 0.17, 1.34, 0.13, 0.38, 0.34, 0.3, 0.62, 1.26, 1.19, 1.73, 0.98, 1.58, 0.37, 0.62, 0.24, 0.23, 1.28, 0.35, 2.24, 0.12, 0.53, 0.3, 0.15, 0.21, 0.03, 0.17, 0.08, 1.84, 0.67, 0.32, 0.14, 0.17, 0.1, 0.03, 0.27, 0.33, 0.17, 0.04, 0.2, 0.32, 0.06, 0.49, 0.64, 0.62, 2.43, 14.94, 7.05, 5.88, 4.75, 2.23, 3.06]], "tsu_kobe": [{"x": 0.945, "y": 1.15, "yr": 1973}, {"x": 1.152, "y": 1.39, "yr": 1974}, {"x": 0.991, "y": 1.33, "yr": 1975}, {"x": 0.958, "y": 1.36, "yr": 1976}, {"x": 0.985, "y": 1.35, "yr": 1977}, {"x": 1.091, "y": 1.2, "yr": 1978}, {"x": 1.1, "y": 1.11, "yr": 1979}, {"x": 1.258, "y": 1.03, "yr": 1980}, {"x": 0.997, "y": 1.21, "yr": 1981}, {"x": 1.039, "y": 1.15, "yr": 1982}, {"x": 1.236, "y": 0.97, "yr": 1983}, {"x": 1.23, "y": 0.9, "yr": 1984}, {"x": 1.152, "y": 0.79, "yr": 1985}, {"x": 1.176, "y": 0.9, "yr": 1986}, {"x": 1.027, "y": 0.84, "yr": 1987}, {"x": 1.615, "y": 0.89, "yr": 1988}, {"x": 1.579, "y": 1.38, "yr": 1989}, {"x": 0.776, "y": 1.0, "yr": 1990}, {"x": 0.715, "y": 1.18, "yr": 1991}, {"x": 0.803, "y": 0.91, "yr": 1992}, {"x": 1.142, "y": 1.14, "yr": 1993}, {"x": 1.212, "y": 1.77, "yr": 1994}, {"x": 0.894, "y": 1.27, "yr": 1995}, {"x": 1.418, "y": 2.46, "yr": 1996}, {"x": 0.748, "y": 1.66, "yr": 1997}, {"x": 0.742, "y": 1.52, "yr": 1998}, {"x": 0.645, "y": 1.42, "yr": 1999}, {"x": 0.579, "y": 1.63, "yr": 2000}, {"x": 0.482, "y": 1.84, "yr": 2001}, {"x": 0.418, "y": 1.86, "yr": 2002}, {"x": 0.355, "y": 1.59, "yr": 2003}, {"x": 0.385, "y": 1.53, "yr": 2004}, {"x": 0.567, "y": 1.25, "yr": 2005}, {"x": 0.521, "y": 1.34, "yr": 2006}, {"x": 0.479, "y": 1.47, "yr": 2007}, {"x": 0.527, "y": 1.49, "yr": 2008}, {"x": 0.642, "y": 1.83, "yr": 2009}, {"x": 0.424, "y": 1.33, "yr": 2010}, {"x": 0.53, "y": 1.54, "yr": 2011}, {"x": 0.527, "y": 1.62, "yr": 2012}, {"x": 0.436, "y": 1.29, "yr": 2013}, {"x": 0.458, "y": 1.23, "yr": 2014}, {"x": 0.633, "y": 1.39, "yr": 2015}, {"x": 0.561, "y": 1.21, "yr": 2016}, {"x": 0.621, "y": 1.07, "yr": 2017}, {"x": 0.767, "y": 1.51, "yr": 2018}, {"x": 0.645, "y": 1.17, "yr": 2019}, {"x": 0.588, "y": 0.93, "yr": 2020}, {"x": 0.664, "y": 1.07, "yr": 2021}, {"x": 0.715, "y": 0.94, "yr": 2022}, {"x": 0.942, "y": 0.83, "yr": 2023}, {"x": 1.03, "y": 0.83, "yr": 2024}]};
+const W = {"years": [1959, 1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], "total": [246327, 259137, 312432, 327048, 350730, 376399, 381638, 425277, 458222, 531170, 560917, 613152, 650167, 694331, 758486, 693570, 779952, 810602, 854917, 885043, 929328, 936336, 911679, 922522, 930583, 1002598, 1037721, 1094589, 1236172, 1360868, 1371665, 1455499, 1316653, 1327609, 1423973, 1255275, 1296889, 1239634, 1251048, 1301419, 1335099, 1333574, 1296256, 1376957, 1476314, 1273831, 1295111, 1262265, 1503701, 1341636, 1090218, 1169824, 1222650, 1251431, 1274282, 1407622, 1299261, 1005279, 1029723, 1089382, 1037512, 885041, 976000, 874696, 894863, 1038626], "offshore": [88168, 91169, 109598, 125279, 136559, 153744, 153944, 165560, 179522, 201275, 215140, 230306, 245507, 237905, 259450, 238015, 292739, 313864, 341620, 354440, 363805, 370129, 345580, 345083, 319634, 333392, 315379, 305839, 300150, 307660, 333309, 291910, 266566, 280188, 258071, 241698, 255816, 256252, 246305, 208873, 206220, 169008, 159800, 185655, 193159, 196674, 201162, 154740, 135417, 133323, 147364, 128782, 163536, 148250, 125021, 139928, 135298, 139173, 160140, 153529, 153102, 150013, 148374, 115325, 158516, 147298], "kinchaku": [12967, 9587, 18436, 22735, 20105, 23753, 17630, 21856, 26558, 26619, 33571, 19071, 27194, 24352, 30652, 17957, 17991, 20167, 36783, 37048, 25964, 25620, 33397, 24364, 20977, 21567, 34014, 29759, 27910, 22937, 16471, 9826, 6605, 13887, 11092, 5366, 13770, 16444, 14941, 13449, 5394, 4141, 2197, 2540, 3387, 3867, 2498, 858, 1595, 978, 765, 1233, 115, 121, 97, 88, 75, 133, 2080, 85, 139, 205, 326, 50, 80, 41], "seine": [null, null, null, null, null, null, null, null, 29, 415, 287, 1984, 765, 220, null, null, null, null, 2189, 3990, 20358, 19918, 17213, 23444, 20432, 30297, 28054, 34027, 23036, 32434, 43351, 53897, 42734, 60858, 63849, 71941, 61961, 77075, 69703, 42331, 58843, 26941, 22205, 34016, 45464, 46640, 45560, 27108, 13474, 15943, 63872, 57775, 5221, 2007, 48, null, null, null, null, null, null, null, null, null, null, null], "bou": [18228, 19563, 28172, 32869, 41470, 37874, 29447, 23891, 19370, 24939, 22868, 33617, 32473, 31750, 29750, 28090, 32002, 26722, 21680, 17840, 26318, 19139, 23735, 24745, 20951, 18442, 23345, 18930, 20818, 21118, 34468, 34132, 24292, 23156, 16897, 21542, 18633, 16960, 19556, 24768, 28376, 23727, 20728, 24163, 29819, 28621, 36640, 25536, 32690, 40155, 6041, 4174, 1932, 1428, 1421, 4375, 4728, 5370, 7349, 2580, 5957, 8013, 6112, 6041, 6542, 7873], "panet": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 85090, 81519, 66697, 76787, 84410, 80448, 85638, 94465, 90153, 93791, 97204, 69881, 98782, 93948], "mackerel_fishery": [null, null, null, null, null, null, null, null, 29, 415, 287, 1984, 765, 220, null, null, null, null, 2189, 3990, 20358, 19918, 17213, 23444, 20432, 30297, 28054, 34027, 23036, 32434, 43351, 53897, 42734, 60858, 63849, 71941, 61961, 77075, 69703, 42331, 58843, 26941, 22205, 34016, 45464, 46640, 45560, 27108, 13474, 15943, 63872, 57775, 85090, 81519, 66697, 76787, 84410, 80448, 85638, 94465, 90153, 93791, 97204, 69881, 98782, 93948], "mf_kind": [null, null, null, null, null, null, null, null, "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", null, null, null, null, "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網"], "county2024_gomasaba": [["基隆市", 27568, 1728520], ["宜蘭縣", 19361, 929349], ["新北市", 15741, 472230], ["高雄市", 111, 6392], ["澎湖縣", 66, 461], ["花蓮縣", 54, 2544], ["臺東縣", 9, 851], ["新竹市", 2, 168], ["臺中市", 1, 40]], "county2024_maaji": [["基隆市", 5790, 210759], ["新北市", 4368, 109197], ["宜蘭縣", 3772, 161146], ["澎湖縣", 483, 4997], ["高雄市", 177, 8841], ["苗栗縣", 116, 4542], ["新竹市", 61, 4461], ["臺南市", 36, 1113], ["彰化縣", 6, 550], ["嘉義縣", 5, 166], ["花蓮縣", 5, 556], ["桃園市", 4, 181], ["臺中市", 3, 152], ["新竹縣", 1, 103]], "panet2024": [["花腹鯖", 62201, 3105191], ["其他鯖科（主為白腹鯖）", 11288, 554891], ["其他鰺科", 1747, 64000], ["圓花鰹", 1731, 73003], ["眼眶魚", 1696, 51000], ["正鰹", 1118, 32038], ["黃鰭鮪", 733, 49419], ["真鰺", 504, 18000], ["其他鰹類", 231, 8260], ["扁花鰹", 210, 9003], ["其他海水魚類", 178, 15000], ["帶魚屬", 170, 23304]], "saba2024": [["正鰹", 205774], ["花腹鯖", 62915], ["長鰭鮪", 52067], ["黃鰭鮪", 49772], ["大目鮪", 35403], ["其他鯖科（含白腹鯖）", 12328], ["圓花鰹", 4735], ["太平洋黑鮪", 2261], ["其他鰆類", 1432], ["南方黑鮪", 1353], ["康氏馬加鰆", 789], ["其他鰹類", 669], ["扁花鰹", 657], ["日本馬加鰆", 244]], "totals2024": {"gomasaba_q": 62915, "gomasaba_v": 3140565, "maaji_q": 14825, "maaji_v": 506794, "saba_family_q": 430399, "panet_q": 93948, "panet_v": 4433297, "offshore_q": 147298, "grand_q": 1038626, "other_saba_q": 12328, "other_saba_v": 699313}};
+const _C=Chart; window.Chart=function(el,cfg){try{return new _C(el,cfg);}catch(e){console.error('chart fail',el&&el.id,e);}};
+Chart.defaults=_C.defaults; Chart.register=_C.register&&_C.register.bind(_C);
+const TABS=["總覽","最新資訊","漁獲量趨勢","資源動態","體長・體重・年齡結構","臺灣鯖魚專頁","管理與資源狀態","資料來源"];
+const tb=document.getElementById('tabs');
+TABS.forEach((t,i)=>{const b=document.createElement('button');b.className='tab'+(i==0?' on':'');b.textContent=t;
+ b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+ document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('on',j==i));};tb.appendChild(b);});
+
+Chart.defaults.color='#9fb8ce';
+Chart.defaults.borderColor='rgba(255,255,255,.06)';
+Chart.defaults.font.family='"Noto Sans TC","PingFang TC",system-ui,sans-serif';
+Chart.defaults.font.size=11;
+Chart.defaults.plugins.legend.labels.boxWidth=11;
+Chart.defaults.plugins.legend.labels.boxHeight=11;
+Chart.defaults.plugins.legend.labels.usePointStyle=false;
+Chart.defaults.maintainAspectRatio=false;
+const T={backgroundColor:'#0b1725',borderColor:'#2d4d6e',borderWidth:1,padding:10,titleColor:'#e8f1f8',bodyColor:'#c7dbeb'};
+const gx={grid:{display:false},ticks:{maxTicksLimit:14,autoSkip:true}};
+const gy=(t)=>({title:{display:!!t,text:t,color:'#6d8aa4',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},beginAtZero:true});
+
+// 1. Kobe
+Chart(document.getElementById('c_kobe'),{type:'scatter',data:{datasets:[
+ {label:'1973–2024 年軌跡',data:D.tsu_kobe,showLine:true,borderColor:'rgba(76,201,240,.35)',borderWidth:1,
+  pointRadius:c=>{const y=c.raw.yr;return y>=2020?5:2.5;},
+  pointBackgroundColor:c=>{const y=c.raw.yr;return y>=2020?'#f9c74f':(y<1990?'#b39ddb':'#4cc9f0');}}]},
+ options:{plugins:{tooltip:{...T,callbacks:{label:c=>`${c.raw.yr}年  SB/SBmsy=${c.raw.x}  F/Fmsy=${c.raw.y}`}},
+ legend:{display:false}},
+ scales:{x:{...gy('親魚量 / SBmsy'),beginAtZero:true},y:{...gy('漁獲壓力 F / Fmsy')}}}});
+
+// 2. overview catch
+Chart(document.getElementById('c_ov'),{type:'line',data:{labels:D.pac_years,datasets:[
+ {label:'太平洋系群 合計',data:D.pac_total.map(v=>v/10000),borderColor:'#f4736c',backgroundColor:'rgba(244,115,108,.1)',
+  fill:true,tension:.25,pointRadius:0,borderWidth:2},
+ {label:'対馬暖流系群 日韓合計',data:D.pac_years.map(y=>{const i=D.tsu_years.indexOf(y);return i<0?null:D.tsu_jp[i]+D.tsu_kr[i];}),
+  borderColor:'#4cc9f0',backgroundColor:'rgba(76,201,240,.1)',fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},scales:{x:gx,y:gy('萬噸')}}});
+
+// 3. Pacific by country
+Chart(document.getElementById('c_pac1'),{type:'bar',data:{labels:D.pac_years,datasets:[
+ {label:'日本',data:D.pac_jp.map(v=>v/10000),backgroundColor:'#4cc9f0'},
+ {label:'俄羅斯 ロシア',data:D.pac_ru.map(v=>v/10000),backgroundColor:'#b39ddb'},
+ {label:'中國 中国',data:D.pac_cn.map(v=>v/10000),backgroundColor:'#f4736c'}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},
+ scales:{x:{...gx,stacked:true},y:{...gy('萬噸'),stacked:true}}}});
+
+// 4. Pacific by gear
+Chart(document.getElementById('c_pac2'),{type:'bar',data:{labels:D.pac_years,datasets:[
+ {label:'北区まき網（北部圍網）',data:D.pac_kita.map(v=>v/10000),backgroundColor:'#4cc9f0'},
+ {label:'定置網等',data:D.pac_teichi.map(v=>v/10000),backgroundColor:'#7bd389'},
+ {label:'火光利用さば漁業',data:D.pac_kakou.map(v=>v/10000),backgroundColor:'#f9c74f'},
+ {label:'中区まき網',data:D.pac_chu.map(v=>v/10000),backgroundColor:'#b39ddb'},
+ {label:'南区全漁業',data:D.pac_nan.map(v=>v/10000),backgroundColor:'#6d8aa4'}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},
+ scales:{x:{...gx,stacked:true},y:{...gy('萬噸'),stacked:true}}}});
+
+// 5. foreign share
+Chart(document.getElementById('c_pac3'),{type:'line',data:{labels:D.pac_years,datasets:[
+ {label:'外國漁獲占比 (%)',data:D.pac_years.map((y,i)=>D.pac_total[i]?((D.pac_ru[i]+D.pac_cn[i])/D.pac_total[i]*100):0),
+  borderColor:'#f4736c',backgroundColor:'rgba(244,115,108,.14)',fill:true,tension:.2,pointRadius:0,borderWidth:2}]},
+ options:{plugins:{tooltip:T,legend:{display:false}},scales:{x:gx,y:{...gy('%'),max:70}}}});
+
+// 6. Tsushima catch + effort
+Chart(document.getElementById('c_tsu1'),{data:{labels:D.tsu_years,datasets:[
+ {type:'bar',label:'日本',data:D.tsu_jp,backgroundColor:'#4cc9f0',stack:'a',yAxisID:'y'},
+ {type:'bar',label:'韓國 韓国',data:D.tsu_kr,backgroundColor:'#f9c74f',stack:'a',yAxisID:'y'},
+ {type:'line',label:'大中型圍網努力量（千網）',data:D.tsu_eff,borderColor:'#f4736c',borderWidth:2,
+  pointRadius:0,tension:.25,yAxisID:'y1'}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},
+ scales:{x:{...gx,stacked:true},y:{...gy('漁獲量（萬噸）'),stacked:true},
+ y1:{position:'right',title:{display:true,text:'努力量（千網）',color:'#6d8aa4',font:{size:10}},grid:{display:false},beginAtZero:true}}}});
+
+// 7-10 Tsushima stock
+Chart(document.getElementById('c_ts1'),{type:'line',data:{labels:D.tsu_years,datasets:[
+ {label:'資源量',data:D.tsu_biomass,borderColor:'#4cc9f0',backgroundColor:'rgba(76,201,240,.12)',fill:true,tension:.25,pointRadius:0,borderWidth:2},
+ {label:'親魚量 SSB',data:D.tsu_ssb,borderColor:'#7bd389',backgroundColor:'rgba(123,211,137,.14)',fill:true,tension:.25,pointRadius:0,borderWidth:2},
+ {label:'SBmsy = 33.0 萬噸',data:D.tsu_years.map(()=>33.0),borderColor:'#f9c74f',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},scales:{x:gx,y:gy('萬噸')}}});
+
+Chart(document.getElementById('c_ts2'),{data:{labels:D.tsu_years,datasets:[
+ {type:'bar',label:'加入量（億尾）',data:D.tsu_rec,backgroundColor:'#4cc9f0',yAxisID:'y'},
+ {type:'line',label:'再生產成功率 RPS（尾/kg）',data:D.tsu_rps,borderColor:'#f9c74f',borderWidth:2,pointRadius:0,tension:.25,yAxisID:'y1'}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},
+ scales:{x:gx,y:gy('加入量（億尾）'),
+ y1:{position:'right',title:{display:true,text:'RPS（尾/kg）',color:'#6d8aa4',font:{size:10}},grid:{display:false},beginAtZero:true}}}});
+
+Chart(document.getElementById('c_ts3'),{data:{labels:D.tsu_years,datasets:[
+ {type:'line',label:'F / Fmsy',data:D.tsu_ffmsy,borderColor:'#f4736c',borderWidth:2,pointRadius:0,tension:.25,yAxisID:'y'},
+ {type:'line',label:'F/Fmsy = 1',data:D.tsu_years.map(()=>1),borderColor:'#6d8aa4',borderDash:[5,4],borderWidth:1.2,pointRadius:0,yAxisID:'y'},
+ {type:'line',label:'%SPR',data:D.tsu_spr,borderColor:'#7bd389',borderWidth:2,pointRadius:0,tension:.25,yAxisID:'y1'}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},
+ scales:{x:gx,y:gy('F / Fmsy'),
+ y1:{position:'right',title:{display:true,text:'%SPR',color:'#6d8aa4',font:{size:10}},grid:{display:false},beginAtZero:true}}}});
+
+Chart(document.getElementById('c_ts4'),{type:'bar',data:{labels:D.tsu_years,datasets:[
+ {label:'漁獲割合 (%)',data:D.tsu_hr,backgroundColor:D.tsu_hr.map(v=>v>=45?'#f4736c':(v>=35?'#f9c74f':'#7bd389'))}]},
+ options:{plugins:{tooltip:T,legend:{display:false}},scales:{x:gx,y:gy('%')}}});
+
+// 11. Pacific stock anchors
+const anch=D.pac_anchor;
+Chart(document.getElementById('c_pacS'),{type:'line',data:{datasets:[
+ {label:'資源量 · 文獻錨點',data:anch.filter(r=>r[1]!==null).map(r=>({x:r[0],y:r[1]})),
+  showLine:false,borderColor:'#4cc9f0',backgroundColor:'#4cc9f0',pointRadius:6,pointStyle:'circle'},
+ {label:'親魚量 SSB · 文獻錨點',data:anch.filter(r=>r[2]!==null).map(r=>({x:r[0],y:r[2]})),
+  showLine:false,borderColor:'#7bd389',backgroundColor:'#7bd389',pointRadius:6,pointStyle:'triangle'},
+ {label:'資源量 2020–2026（含預測）',data:D.pac_recent.map(r=>({x:r[0],y:r[1]})),
+  borderColor:'#4cc9f0',backgroundColor:'rgba(76,201,240,.10)',fill:true,tension:.2,pointRadius:3,borderWidth:2},
+ {label:'親魚量 2020–2026（含預測）',data:D.pac_recent.map(r=>({x:r[0],y:r[2]})),
+  borderColor:'#7bd389',backgroundColor:'rgba(123,211,137,.14)',fill:true,tension:.2,pointRadius:3,borderWidth:2},
+ {label:'目標管理基準值 48.2',data:[{x:1980,y:48.2},{x:2026,y:48.2}],borderColor:'#f9c74f',borderDash:[5,4],borderWidth:1.5,pointRadius:0},
+ {label:'限界管理基準值 14.2',data:[{x:1980,y:14.2},{x:2026,y:14.2}],borderColor:'#f4736c',borderDash:[5,4],borderWidth:1.5,pointRadius:0}]},
+ options:{plugins:{tooltip:{...T,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y} 萬噸（${c.parsed.x} 漁期）`}}},
+ scales:{x:{type:'linear',...gx,min:1978,max:2028,ticks:{stepSize:5,callback:v=>v}},y:gy('萬噸')}}});
+
+// recent table
+const tr=document.getElementById('t_recent');
+let h='<tr><th>漁期年</th><th class="num">資源量</th><th class="num">親魚量</th><th class="num">漁獲量<br>(解析)</th><th class="num">漁獲量<br>(實績)</th><th class="num">F/Fmsy</th><th class="num">漁獲割合</th></tr>';
+D.pac_recent.forEach(r=>{const f=r[0]>=2025;
+ h+=`<tr${f?' style="opacity:.72"':''}><td>${r[0]}${f?' <span class="jp">預測</span>':''}</td><td class="num">${r[1]}</td>`+
+ `<td class="num"${r[2]<14.2?' style="color:#ff9b95;font-weight:600"':''}>${r[2]}</td><td class="num">${r[3]}</td>`+
+ `<td class="num">${r[4]===null?'—':r[4]}</td><td class="num"${r[5]>1?' style="color:#ff9b95"':' style="color:#8fe09c"'}>${r[5]}</td><td class="num">${r[6]}%</td></tr>`;});
+h+='<tr><td colspan="7" style="font-size:11px;color:#6d8aa4;border:none;padding-top:8px">單位：萬噸</td></tr>';
+tr.innerHTML=h;
+
+// 12. age composition
+const AC=['#1b3a5c','#2f6f9e','#4cc9f0','#7bd389','#f9c74f','#f4736c','#b39ddb'];
+const AL=['0歲','1歲','2歲','3歲','4歲','5歲','6歲以上'];
+Chart(document.getElementById('c_age'),{type:'bar',data:{labels:D.pac_years,
+ datasets:D.pac_agepct.map((d,i)=>({label:AL[i],data:d,backgroundColor:AC[i]}))},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:{...T,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}%`}}},
+ scales:{x:{...gx,stacked:true},y:{...gy('漁獲尾數組成 (%)'),stacked:true,max:100}}}});
+
+// 13. mean weight
+Chart(document.getElementById('c_mw'),{type:'line',data:{labels:D.pac_years,datasets:[
+ {label:'漁獲物平均個體重（g）',data:D.pac_meanwt,borderColor:'#f9c74f',backgroundColor:'rgba(249,199,79,.12)',
+  fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
+ options:{plugins:{tooltip:T,legend:{display:false}},scales:{x:gx,y:{...gy('公克／尾'),beginAtZero:false}}}});
+
+// ===== Taiwan charts =====
+const twy=W.years;
+Chart(document.getElementById('c_tw_hist'),{data:{labels:twy,datasets:[
+ {type:'bar',label:'鯖鰺圍網',data:W.seine,backgroundColor:'#4cc9f0',stack:'a'},
+ {type:'bar',label:'扒網（三腳虎）',data:W.panet,backgroundColor:'#f9c74f',stack:'a'},
+ {type:'bar',label:'巾著網',data:W.kinchaku,backgroundColor:'#b39ddb',stack:'a'},
+ {type:'line',label:'近海漁業合計',data:W.offshore,borderColor:'#f4736c',borderWidth:2,pointRadius:0,tension:.25}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:{...T,callbacks:{
+  label:c=>`${c.dataset.label}: ${c.parsed.y===null?'—':c.parsed.y.toLocaleString()} 公噸`}}},
+ scales:{x:{...gx,stacked:true},y:{...gy('公噸'),stacked:true}}}});
+
+Chart(document.getElementById('c_tw_share'),{type:'line',data:{labels:twy,datasets:[
+ {label:'鯖鰺漁業占近海漁業 (%)',data:twy.map((y,i)=>{const m=W.mackerel_fishery[i],o=W.offshore[i];
+  return (m&&o)?+(m/o*100).toFixed(1):null;}),
+  borderColor:'#f9c74f',backgroundColor:'rgba(249,199,79,.14)',fill:true,tension:.2,pointRadius:0,borderWidth:2,spanGaps:false}]},
+ options:{plugins:{tooltip:T,legend:{display:false}},scales:{x:gx,y:{...gy('%'),max:80}}}});
+
+Chart(document.getElementById('c_tw_tot'),{type:'line',data:{labels:twy,datasets:[
+ {label:'全國總漁獲量',data:W.total,borderColor:'#4cc9f0',backgroundColor:'rgba(76,201,240,.10)',fill:true,tension:.25,pointRadius:0,borderWidth:2},
+ {label:'近海漁業',data:W.offshore,borderColor:'#7bd389',backgroundColor:'rgba(123,211,137,.14)',fill:true,tension:.25,pointRadius:0,borderWidth:2}]},
+ options:{interaction:{mode:'index',intersect:false},plugins:{tooltip:T},scales:{x:gx,y:gy('公噸')}}});
+
+const PN=W.panet2024;
+Chart(document.getElementById('c_tw_panet'),{type:'bar',data:{labels:PN.map(r=>r[0]),datasets:[
+ {label:'產量（公噸）',data:PN.map(r=>r[1]),
+  backgroundColor:PN.map(r=>r[0].indexOf('鯖')>=0?'#4cc9f0':'#3d6285'),borderRadius:3}]},
+ options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{...T,callbacks:{
+  label:c=>`${c.parsed.x.toLocaleString()} 公噸（占扒網 ${(c.parsed.x/93948*100).toFixed(1)}%）`}}},
+ scales:{x:{...gy('公噸'),type:'logarithmic'},y:{grid:{display:false}}}}});
+
+const CN=W.county2024_gomasaba.filter(r=>r[1]>=1);
+Chart(document.getElementById('c_tw_county'),{data:{labels:CN.map(r=>r[0]),datasets:[
+ {type:'bar',label:'產量（公噸）',data:CN.map(r=>r[1]),backgroundColor:'#4cc9f0',yAxisID:'y',borderRadius:3},
+ {type:'line',label:'平均單價（元/公斤）',data:CN.map(r=>+(r[2]*1000/r[1]/1000).toFixed(1)),
+  borderColor:'#f9c74f',borderWidth:2,pointRadius:4,yAxisID:'y1',tension:.2}]},
+ options:{plugins:{tooltip:T},scales:{x:{grid:{display:false}},y:gy('公噸'),
+ y1:{position:'right',title:{display:true,text:'元/公斤',color:'#6d8aa4',font:{size:10}},grid:{display:false},beginAtZero:true}}}});
+
+const SB=W.saba2024;
+Chart(document.getElementById('c_tw_saba'),{type:'bar',data:{labels:SB.map(r=>r[0]),datasets:[
+ {label:'產量（公噸）',data:SB.map(r=>r[1]),
+  backgroundColor:SB.map(r=>r[0].indexOf('花腹鯖')>=0?'#f9c74f':(r[0].indexOf('白腹鯖')>=0?'#7bd389':'#3d6285')),borderRadius:3}]},
+ options:{plugins:{legend:{display:false},tooltip:{...T,callbacks:{
+  label:c=>`${c.parsed.y.toLocaleString()} 公噸（占鯖科 ${(c.parsed.y/430399*100).toFixed(1)}%）`}}},
+ scales:{x:{grid:{display:false},ticks:{maxRotation:60,minRotation:45}},y:gy('公噸')}}});
+
+function twTable(id,rows,unitNote){
+ let s='<tr><th>縣市</th><th class="num">產量(公噸)</th><th class="num">產值(千元)</th><th class="num">單價(元/kg)</th><th class="num">占比</th></tr>';
+ const tq=rows.reduce((a,r)=>a+r[1],0);
+ rows.forEach(r=>{s+=`<tr><td>${r[0]}</td><td class="num">${r[1].toLocaleString()}</td>`+
+  `<td class="num">${r[2].toLocaleString()}</td><td class="num">${(r[2]*1000/r[1]/1000).toFixed(1)}</td>`+
+  `<td class="num">${(r[1]/tq*100).toFixed(1)}%</td></tr>`;});
+ s+=`<tr><td colspan="5" style="font-size:11px;color:#6d8aa4;border:none;padding-top:8px">${unitNote}</td></tr>`;
+ document.getElementById(id).innerHTML=s;}
+twTable('t_tw_county',W.county2024_gomasaba,'資料：民國113年漁業統計年報 表7-(3)。全國合計 62,915 公噸／31.41 億元。');
+twTable('t_tw_maaji',W.county2024_maaji.slice(0,8),'資料：同上。僅列前 8 大縣市；全國合計 14,825 公噸／5.07 億元。');
+
+// 14. Taiwan body length
+const TWL={ '花腹鯖 ゴマサバ':[[25,28],[30,30.9],'30 cm 以上（上限未公布）'],
+ '白腹鯖 マサバ':[[23,26],[26,30],'26–30 cm'],'真鰺 マアジ':[[18,20],[18,22],'18–22 cm'] };
+const twk=Object.keys(TWL);
+Chart(document.getElementById('c_tw1'),{type:'bar',data:{labels:twk,datasets:[
+ {label:'禁漁期實施前（2008–2012）',data:twk.map(k=>TWL[k][0]),backgroundColor:'#f4736c',borderRadius:3},
+ {label:'禁漁期實施後（2013–2020）',data:twk.map(k=>TWL[k][1]),backgroundColor:'#7bd389',borderRadius:3}]},
+ options:{plugins:{legend:{display:false},tooltip:{...T,callbacks:{
+  label:c=>{const k=twk[c.dataIndex],pre=c.datasetIndex===0;
+   return pre?`禁漁期前平均體長 ${TWL[k][0][0]}–${TWL[k][0][1]} cm`:`禁漁期後平均體長 ${TWL[k][2]}`;}}}},
+ scales:{x:gx,y:{...gy('平均體長區間 (cm)'),beginAtZero:false,min:15,max:34}}}});
+
+/* ==========================================================
+   最新資訊 自動更新模組
+   四路來源：農業部魚市場行情 API / FRA 新年度評價偵測 /
+             漁業署年報偵測 / Google News RSS
+   全部在瀏覽器端執行，結果存 localStorage
+   ========================================================== */
+const LIVE_KEY = 'sabaDash.live.v2';
+const MOA_KEY  = 'TWFMLNBUUQ97ANASW95L4APITWG0GO';
+const MOA_API  = 'https://data.moa.gov.tw/api/v1/FisheryProductsTransType/';
+const MAX_PAGE = 22;
+
+const $ = id => document.getElementById(id);
+const setDot = (id, cls) => { const e = $(id); if (e) e.className = 'dot' + (cls ? ' ' + cls : ''); };
+const setMsg = t => { const e = $('updMsg'); if (e) e.innerHTML = t; };
+const setProg = p => { const e = $('progBar'); if (e) e.style.width = Math.max(0, Math.min(100, p)) + '%'; };
+
+/* ---------- 跨域抓取：直連優先，失敗改走公用代理 ---------- */
+const PROXIES = [
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+];
+
+async function rawFetch(url, ms) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms || 25000);
+  try {
+    const r = await fetch(url, { signal: ac.signal, redirect: 'follow' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.text();
+  } finally { clearTimeout(t); }
+}
+
+async function smartFetch(url, opt) {
+  opt = opt || {};
+  const useProxy = $('chkProxy') ? $('chkProxy').checked : true;
+  const errs = [];
+  const chain = [u => u].concat(useProxy ? PROXIES : []);
+  for (let i = 0; i < chain.length; i++) {
+    try {
+      const txt = await rawFetch(chain[i](url), opt.timeout);
+      if (txt && txt.length > 0) return { text: txt, via: i === 0 ? 'direct' : 'proxy' + i };
+    } catch (e) { errs.push((i === 0 ? '直連' : '代理' + i) + '：' + e.message); }
+  }
+  throw new Error(errs.join(' ／ '));
+}
+
+/* ---------- 日期工具 ---------- */
+const pad = n => String(n).padStart(2, '0');
+function toRoc(d) { return (d.getFullYear() - 1911) + pad(d.getMonth() + 1) + pad(d.getDate()); }
+function rocToAd(s) {
+  s = String(s || '').replace(/\D/g, '');
+  if (s.length < 7) return null;
+  return (parseInt(s.slice(0, 3), 10) + 1911) + '-' + s.slice(3, 5) + '-' + s.slice(5, 7);
+}
+const nowStr = () => new Date().toLocaleString('zh-TW', { hour12: false });
+
+/* ---------- 1. 農業部 漁產品交易行情 ---------- */
+function normRec(r) {
+  const keys = Object.keys(r);
+  const pick = (exact, fuzzy) => {
+    for (const k of exact) if (r[k] !== undefined && r[k] !== null && r[k] !== '') return r[k];
+    if (fuzzy) for (const k of keys) if (fuzzy.test(k) && r[k] !== null && r[k] !== '') return r[k];
+    return null;
+  };
+  return {
+    date:   pick(['TransDate', 'Trans_Date', 'transdate'], /trans.*date|^date$/i),
+    name:   pick(['SeafoodProdName', 'ProdName', 'CropName'], /prod.*name|seafood/i),
+    market: pick(['MarketName', 'Market_Name', 'MarketNo'], /market/i),
+    avg:    parseFloat(pick(['Avg_Price', 'AvgPrice', 'Avg_price'], /avg/i)) || 0,
+    qty:    parseFloat(pick(['Trans_Quantity', 'TransQuantity', 'Quantity'], /quantity/i)) || 0
+  };
+}
+
+async function fetchMOA(prog) {
+  const end = new Date(), start = new Date();
+  start.setDate(start.getDate() - 45);
+  let all = [], seenNames = {}, pages = 0;
+  for (let p = 1; p <= MAX_PAGE; p++) {
+    const url = MOA_API + '?api_key=' + MOA_KEY + '&format=json&Start_time=' + toRoc(start) +
+                '&End_time=' + toRoc(end) + '&Page=' + p;
+    let j;
+    try {
+      const res = await smartFetch(url, { timeout: 30000 });
+      j = JSON.parse(res.text);
+    } catch (e) {
+      if (p === 1) throw e;
+      break;
+    }
+    pages = p;
+    const rows = (j.Data || j.data || []);
+    rows.forEach(r0 => {
+      const r = normRec(r0);
+      if (!r.name) return;
+      seenNames[r.name] = (seenNames[r.name] || 0) + 1;
+      if (r.name.indexOf('鯖') >= 0 && r.avg > 0 && r.name.indexOf('休市') < 0) all.push(r);
+    });
+    prog(20 + Math.round(p / MAX_PAGE * 35));
+    if (!(j.Next === true || j.Next === 'true')) break;
+  }
+
+  // 依日期彙總（成交量加權）
+  const byDate = {};
+  all.forEach(r => {
+    const d = rocToAd(r.date); if (!d) return;
+    const b = byDate[d] || (byDate[d] = { q: 0, v: 0, rows: [] });
+    b.q += r.qty; b.v += r.avg * r.qty; b.rows.push(r);
+  });
+  const dates = Object.keys(byDate).sort();
+  const series = dates.map(d => ({
+    date: d,
+    qty: +byDate[d].q.toFixed(1),
+    avg: byDate[d].q > 0 ? +(byDate[d].v / byDate[d].q).toFixed(2)
+                         : +(byDate[d].rows.reduce((a, x) => a + x.avg, 0) / byDate[d].rows.length).toFixed(2)
+  })).slice(-30);
+
+  const last = dates[dates.length - 1] || null;
+  const detail = last ? byDate[last].rows.map(r => ({
+    market: r.market || '—', name: r.name, avg: r.avg, qty: r.qty
+  })).sort((a, b) => b.qty - a.qty) : [];
+
+  return {
+    series, detail, lastDate: last, pages,
+    records: all.length,
+    topNames: Object.keys(seenNames).sort((a, b) => seenNames[b] - seenNames[a]).slice(0, 12)
+  };
+}
+
+/* ---------- 2. 日本 FRA 新年度資源評價偵測 ---------- */
+async function fetchFRA(prog) {
+  const y = new Date().getFullYear();
+  const base = 'https://www.fra.go.jp/shigen/fisheries_resources/meeting/stock_assessment_meeting/';
+  const targets = [
+    { yr: y,     code: 'sc17', label: 'マサバ太平洋系群' },
+    { yr: y,     code: 'sc18', label: 'マサバ対馬暖流系群' },
+    { yr: y - 1, code: 'sc17', label: 'マサバ太平洋系群' },
+    { yr: y - 1, code: 'sc18', label: 'マサバ対馬暖流系群' }
+  ];
+  const out = [];
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    const url = base + t.yr + '/sa' + t.yr + '-' + t.code + '.html';
+    let ok = false, note = '';
+    try {
+      const res = await smartFetch(url, { timeout: 20000 });
+      ok = /マサバ|資源評価/.test(res.text);
+      if (!ok) note = '頁面回應但內容不符（可能為錯誤頁）';
+    } catch (e) { note = e.message.slice(0, 70); }
+    out.push({ yr: t.yr, label: t.label, url, ok, note });
+    prog(58 + Math.round((i + 1) / targets.length * 14));
+  }
+  const latest = out.filter(o => o.ok).reduce((m, o) => Math.max(m, o.yr), 0);
+  return { items: out, latestYear: latest, baseline: 2025 };
+}
+
+/* ---------- 3. 台灣漁業統計年報偵測 ---------- */
+async function fetchFA() {
+  const url = 'https://www.fa.gov.tw/list.php?theme=FS_AR';
+  const r = { url, reachable: false, hint: '', note: '' };
+  try {
+    const res = await smartFetch(url, { timeout: 20000 });
+    r.reachable = true;
+    const m = res.text.match(/民國\s*1[0-9]{2}\s*年/g);
+    if (m && m.length) {
+      const yrs = m.map(s => parseInt(s.replace(/\D/g, ''), 10)).filter(n => n > 100 && n < 200);
+      if (yrs.length) r.hint = '頁面出現最新年度：民國 ' + Math.max.apply(null, yrs) + ' 年';
+    }
+    if (!r.hint) r.note = '頁面可連線，但內容由 JavaScript 動態產生，抓不到年度字串，請以連結人工確認';
+  } catch (e) { r.note = '無法連線：' + e.message.slice(0, 60); }
+  return r;
+}
+
+/* ---------- 4. 新聞 RSS ---------- */
+function parseRSS(xml, srcLabel) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  return Array.from(doc.querySelectorAll('item')).map(it => {
+    const g = t => { const n = it.querySelector(t); return n ? n.textContent : ''; };
+    return { title: g('title'), link: g('link'), pub: g('pubDate'), src: srcLabel };
+  }).filter(x => x.title);
+}
+
+async function fetchNews(prog) {
+  const feeds = [
+    ['https://news.google.com/rss/search?q=' + encodeURIComponent('鯖魚 OR 鯖鰺') + '&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', '中文'],
+    ['https://news.google.com/rss/search?q=' + encodeURIComponent('サバ 資源 OR マサバ 漁獲') + '&hl=ja&gl=JP&ceid=JP:ja', '日文']
+  ];
+  let items = [];
+  for (let i = 0; i < feeds.length; i++) {
+    try {
+      const res = await smartFetch(feeds[i][0], { timeout: 22000 });
+      items = items.concat(parseRSS(res.text, feeds[i][1]));
+    } catch (e) { /* 單一來源失敗不中斷 */ }
+    prog(74 + (i + 1) * 8);
+  }
+  const seen = {};
+  items = items.filter(x => { const k = x.title.slice(0, 40); if (seen[k]) return false; seen[k] = 1; return true; });
+  items.sort((a, b) => new Date(b.pub) - new Date(a.pub));
+  return items.slice(0, 16);
+}
+
+/* ---------- 渲染 ---------- */
+let liveCharts = {};
+function drawLive(S) {
+  if (!S || !S.series || !S.series.length) return;
+  ['c_live_price', 'c_live_qty'].forEach(k => { if (liveCharts[k]) { try { liveCharts[k].destroy(); } catch (e) {} } });
+  const lb = S.series.map(r => r.date.slice(5));
+  liveCharts.c_live_price = Chart($('c_live_price'), {
+    type: 'line', data: { labels: lb, datasets: [{
+      label: '鯖魚加權均價（元/公斤）', data: S.series.map(r => r.avg),
+      borderColor: '#f9c74f', backgroundColor: 'rgba(249,199,79,.14)',
+      fill: true, tension: .25, pointRadius: 2.5, borderWidth: 2 }] },
+    options: { plugins: { tooltip: T, legend: { display: false } },
+      scales: { x: gx, y: { ...gy('元／公斤'), beginAtZero: false } } }
+  });
+  liveCharts.c_live_qty = Chart($('c_live_qty'), {
+    type: 'bar', data: { labels: lb, datasets: [{
+      label: '成交量（公斤）', data: S.series.map(r => r.qty), backgroundColor: '#4cc9f0', borderRadius: 3 }] },
+    options: { plugins: { tooltip: T, legend: { display: false } }, scales: { x: gx, y: gy('公斤') } }
+  });
+}
+
+function renderLive(S) {
+  if (!S) return;
+  /* KPI */
+  if (S.moa && S.moa.series && S.moa.series.length) {
+    const s = S.moa.series, n = s.length, cur = s[n - 1], prev = n > 1 ? s[n - 2] : null;
+    const mean30 = +(s.reduce((a, x) => a + x.avg, 0) / n).toFixed(2);
+    const dif = prev ? +(cur.avg - prev.avg).toFixed(2) : null;
+    const pct = prev && prev.avg ? +(dif / prev.avg * 100).toFixed(1) : null;
+    const col = dif === null ? 'var(--ink3)' : (dif > 0 ? 'var(--warn)' : (dif < 0 ? 'var(--ok)' : 'var(--ink2)'));
+    $('liveKpi').innerHTML =
+      kpi('最新交易日均價', cur.avg.toFixed(1), '元/公斤', 'var(--acc2)', cur.date + ' 全國魚市場成交量加權平均') +
+      kpi('最新交易日成交量', cur.qty.toLocaleString(), '公斤', 'var(--acc)', '共 ' + S.moa.detail.length + ' 筆市場別紀錄') +
+      kpi('近 30 個交易日均價', mean30.toFixed(1), '元/公斤', 'var(--ink)', '期間：' + s[0].date + ' ～ ' + cur.date) +
+      kpi('較前一交易日', (dif === null ? '—' : (dif > 0 ? '+' : '') + dif.toFixed(1)), '元/公斤', col,
+          pct === null ? '無前一交易日資料' : (pct > 0 ? '上漲 ' : (pct < 0 ? '下跌 ' : '持平 ')) + Math.abs(pct) + '%');
+    drawLive(S.moa);
+    let h = '<tr><th>魚市場</th><th>品名</th><th class="num">均價(元/kg)</th><th class="num">成交量(公斤)</th></tr>';
+    S.moa.detail.forEach(r => {
+      h += '<tr><td>' + esc(r.market) + '</td><td>' + esc(r.name) + '</td><td class="num">' +
+           r.avg.toFixed(1) + '</td><td class="num">' + r.qty.toLocaleString() + '</td></tr>';
+    });
+    $('t_live_market').innerHTML = h;
+    $('liveMktSub').textContent = '交易日 ' + S.moa.lastDate + '｜共掃描 ' + S.moa.pages +
+      ' 頁 API 分頁、擷取 ' + S.moa.records + ' 筆鯖魚紀錄';
+  } else if (S.moa) {
+    $('liveMktSub').innerHTML = '近 45 日資料中未找到品名含「鯖」的交易紀錄。API 回應正常，期間內成交品項前幾名為：' +
+      esc((S.moa.topNames || []).join('、') || '（無）');
+  }
+
+  /* 來源檢查 */
+  if (S.fra || S.fa) {
+    let h = '';
+    if (S.fra) {
+      const nu = S.fra.latestYear;
+      const anyOk = S.fra.items.some(o => o.ok);
+      h += '<div style="margin-bottom:10px">' +
+        (!anyOk
+          ? '<b style="color:var(--warn)">無法連線 FRA，本次未能確認</b>　所有探測皆失敗（多為瀏覽器同源政策或代理暫時無回應），請直接開啟下方連結人工確認。'
+          : nu > S.fra.baseline
+            ? '<b style="color:var(--acc2)">偵測到 FRA ' + nu + ' 年度資源評價頁面已上線</b>　儀表板目前採用 ' + S.fra.baseline + '（令和7）年度資料，建議開啟下方連結核對新版數值。'
+            : '<b style="color:var(--ok)">未偵測到新年度評價頁面</b>　儀表板目前採用的 ' + S.fra.baseline + '（令和7）年度資料仍為最新。') + '</div>';
+      S.fra.items.forEach(o => {
+        h += '<div class="src-row"><div><span class="dot ' + (o.ok ? 'ok' : 'bad') + '" style="display:inline-block;margin-right:7px"></span>' +
+          o.yr + ' 年度 ' + o.label + (o.ok ? '' : '　<span style="color:var(--ink3)">' + esc(o.note) + '</span>') +
+          '</div><div><a href="' + o.url + '" target="_blank">開啟</a></div></div>';
+      });
+    }
+    if (S.fa) {
+      h += '<div class="src-row" style="margin-top:6px"><div><span class="dot ' + (S.fa.reachable ? 'ok' : 'bad') +
+        '" style="display:inline-block;margin-right:7px"></span>漁業署 漁業統計年報　' +
+        esc(S.fa.hint || S.fa.note || '') + '</div><div><a href="' + S.fa.url + '" target="_blank">開啟</a></div></div>';
+      h += '<div style="margin-top:10px;color:var(--ink3)">儀表板臺灣數據目前採用《民國 113（2024）年漁業統計年報》。年報一般於次年下半年發布。</div>';
+    }
+    $('srcCheck').innerHTML = h;
+  }
+
+  /* 新聞 */
+  if (S.news && S.news.length) {
+    $('newsList').innerHTML = S.news.map(n =>
+      '<li><a href="' + n.link + '" target="_blank">' + esc(n.title) + '</a>' +
+      '<span class="jp" style="margin-left:8px">' + n.src + '｜' +
+      (n.pub ? new Date(n.pub).toLocaleDateString('zh-TW') : '') + '</span></li>').join('');
+  } else if (S.news) {
+    $('newsList').innerHTML = '<li style="color:var(--ink3)">未取得新聞（來源可能被瀏覽器或代理阻擋）</li>';
+  }
+
+  /* 總覽即時列 */
+  const lbBar = $('liveBar');
+  if (lbBar) {
+    let txt = '<b>即時資訊</b>　最後更新：' + (S.at || '—');
+    if (S.moa && S.moa.series && S.moa.series.length) {
+      const c = S.moa.series[S.moa.series.length - 1];
+      txt += '　｜　台灣魚市場鯖魚 ' + c.date + ' 均價 <b style="color:var(--acc2)">' + c.avg.toFixed(1) +
+             ' 元/公斤</b>，成交量 <b>' + c.qty.toLocaleString() + ' 公斤</b>';
+    }
+    if (S.fra && S.fra.latestYear > S.fra.baseline) {
+      txt += '　｜　<b style="color:var(--acc2)">FRA ' + S.fra.latestYear + ' 年度評價已發布</b>';
+    }
+    txt += '　<a href="#" id="goLive">前往最新資訊頁</a>';
+    lbBar.innerHTML = txt;
+    const gl = $('goLive');
+    if (gl) gl.onclick = e => { e.preventDefault(); const t = document.querySelectorAll('.tab')[1]; if (t) t.click(); };
+  }
+}
+
+function kpi(lab, val, unit, color, note) {
+  return '<div class="kpi"><div class="lab">' + lab + '</div><div class="val" style="color:' + color + '">' +
+    val + '<span style="font-size:14px;color:var(--ink3)"> ' + unit + '</span></div>' +
+    '<div class="note">' + note + '</div></div>';
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+/* ---------- 主流程 ---------- */
+let updating = false;
+async function runUpdate() {
+  if (updating) return;
+  updating = true;
+  $('btnUpd').disabled = true;
+  ['d_moa', 'd_fra', 'd_fa', 'd_news'].forEach(d => setDot(d, ''));
+  setProg(3);
+  const S = { at: nowStr(), errors: [] };
+
+  setDot('d_moa', 'run');
+  setMsg('步驟 1／4：連線農業部農業資料開放平臺，抓取近 45 日漁產品交易行情…');
+  try {
+    S.moa = await fetchMOA(setProg);
+    setDot('d_moa', S.moa.series.length ? 'ok' : 'bad');
+    if (!S.moa.series.length) S.errors.push('魚市場行情：期間內查無鯖魚交易紀錄');
+  } catch (e) { setDot('d_moa', 'bad'); S.errors.push('魚市場行情：' + e.message); }
+
+  setDot('d_fra', 'run'); setProg(58);
+  setMsg('步驟 2／4：探測日本 FRA 是否已發布新年度マサバ資源評價…');
+  try {
+    S.fra = await fetchFRA(setProg);
+    const anyOk = S.fra.items.some(o => o.ok);
+    setDot('d_fra', anyOk ? 'ok' : 'bad');
+    if (!anyOk) S.errors.push('FRA：所有頁面探測皆失敗，未能確認是否有新年度評價');
+  }
+  catch (e) { setDot('d_fra', 'bad'); S.errors.push('FRA：' + e.message); }
+
+  setDot('d_fa', 'run'); setProg(72);
+  setMsg('步驟 3／4：檢查台灣漁業署漁業統計年報是否有新年度版本…');
+  try { S.fa = await fetchFA(); setDot('d_fa', S.fa.reachable ? 'ok' : 'bad'); }
+  catch (e) { setDot('d_fa', 'bad'); S.errors.push('年報：' + e.message); }
+
+  setDot('d_news', 'run'); setProg(76);
+  setMsg('步驟 4／4：抓取中日文鯖魚相關最新新聞…');
+  try { S.news = await fetchNews(setProg); setDot('d_news', S.news.length ? 'ok' : 'bad'); }
+  catch (e) { setDot('d_news', 'bad'); S.errors.push('新聞：' + e.message); }
+
+  setProg(100);
+  renderLive(S);
+  try { localStorage.setItem(LIVE_KEY, JSON.stringify(S)); } catch (e) {}
+  const okN = ['d_moa', 'd_fra', 'd_fa', 'd_news'].filter(d => $(d) && $(d).classList.contains('ok')).length;
+  setMsg('更新完成（' + S.at + '）　成功 ' + okN + ' ／ 4 項來源。' +
+    (S.errors.length ? '<br><span style="color:#ff9b95">未完成項目：' + esc(S.errors.join('；')) + '</span>' +
+      '<br><span style="color:var(--ink3)">若多項失敗，多半是瀏覽器同源政策或代理暫時無回應：請確認已勾選「允許公用 CORS 代理」後重試，或改用本機 HTTP 伺服器開啟本檔。</span>' : ''));
+  $('btnUpd').disabled = false;
+  updating = false;
+  setTimeout(() => setProg(0), 1500);
+}
+
+/* ---------- 啟動：載入上次快取 ---------- */
+(function initLive() {
+  const b = $('btnUpd'); if (b) b.onclick = runUpdate;
+  const c = $('btnClr');
+  if (c) c.onclick = () => {
+    try { localStorage.removeItem(LIVE_KEY); } catch (e) {}
+    setMsg('已清除本機快取。');
+    const lb = $('liveBar'); if (lb) lb.innerHTML = '<b>即時資訊</b>　尚未更新　<a href="#" id="goLive">前往最新資訊頁</a>';
+  };
+  let S = null;
+  try { S = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null'); } catch (e) {}
+  if (S) {
+    renderLive(S);
+    ['moa', 'fra', 'fa', 'news'].forEach(k => setDot('d_' + k, S[k] ? 'ok' : 'bad'));
+    setMsg('顯示的是上次更新結果（' + esc(S.at || '') + '）。點擊「立即更新最新資訊」重新抓取。');
+  } else {
+    const lb = $('liveBar');
+    if (lb) lb.innerHTML = '<b>即時資訊</b>　尚未更新　<a href="#" id="goLive">前往最新資訊頁抓取台灣魚市場鯖魚行情與最新新聞</a>';
+  }
+  const gl = $('goLive');
+  if (gl) gl.onclick = e => { e.preventDefault(); const t = document.querySelectorAll('.tab')[1]; if (t) t.click(); };
+})();
+</script>
+</body></html>
