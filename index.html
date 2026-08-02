@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>農業部水產試驗所｜鯖魚漁業資源儀表板 台灣・日本</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root{
   --bg:#0d1b2a; --panel:#152a3f; --panel2:#1b3550;
@@ -84,6 +86,36 @@ a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
  border-bottom:1px solid #23405c;font-size:12.5px;color:var(--ink2);align-items:center}
 ul.news li{margin-bottom:8px;line-height:1.6}
 code{background:#0b1725;border:1px solid var(--panel-b);border-radius:4px;padding:1px 5px;font-size:.92em}
+#fgMap{height:520px;border-radius:9px;border:1px solid var(--panel-b);background:#0b1725;margin-top:4px}
+.leaflet-container{background:#0b1725;font-family:inherit}
+.leaflet-control-layers{background:#152a3f;color:var(--ink2);border:1px solid var(--panel-b);
+ border-radius:8px;font-size:12px;padding:4px 6px}
+.leaflet-control-layers-separator{border-top:1px solid var(--panel-b)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#152a3f;color:var(--ink);
+ border:1px solid var(--panel-b);font-size:12.5px;line-height:1.6}
+.leaflet-bar a{background:#152a3f;color:var(--ink2);border-color:var(--panel-b)}
+.leaflet-bar a:hover{background:#1b3550;color:var(--ink)}
+.leaflet-control-attribution{background:rgba(11,23,37,.82)!important;color:#6d8aa4!important;font-size:10px}
+.leaflet-control-attribution a{color:#4cc9f0!important}
+.fg-legend{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:11px;
+ font-size:11.5px;color:var(--ink2)}
+.fg-legend i{display:inline-block;width:26px;height:11px;border-radius:2px}
+.fg-row{display:grid;grid-template-columns:1fr 108px 62px;gap:9px;align-items:center;
+ padding:5px 0;font-size:12px;color:var(--ink2)}
+.fg-row label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fg-row input[type=range]{width:100%;accent-color:var(--acc)}
+.fg-val{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-size:12px}
+#fgMsg{font-size:12.5px;color:var(--ink2);margin-top:11px;line-height:1.7}
+.fg-warn{background:rgba(244,115,108,.13);border:1px solid rgba(244,115,108,.4);
+ border-left:4px solid var(--warn);border-radius:0 9px 9px 0;padding:13px 17px;
+ font-size:13px;color:#ffb3ae;line-height:1.75;margin-bottom:18px}
+.fg-disc{background:#12243a;border:1px solid var(--panel-b);border-left:3px solid var(--acc2);
+ border-radius:0 9px 9px 0;padding:15px 19px;margin-top:16px;font-size:12.5px;
+ color:var(--ink2);line-height:1.85}
+.fg-disc b{color:var(--acc2)}
+.fg-disc ol{margin:9px 0 0;padding-left:20px}
+.fg-disc li{margin-bottom:7px}
+.fg-disc li b{color:var(--ink)}
 footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:11.5px;color:var(--ink3);line-height:1.9}
 </style>
 </head>
@@ -205,6 +237,97 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:1
   </div>
 
   <div class="note-box"><b>技術說明：</b>本頁所有抓取皆在您的瀏覽器端直接執行，不經過任何伺服器保存資料。以本機檔案（file://）開啟 HTML 時，瀏覽器同源政策會阻擋直接跨網域請求，因此預設啟用公用 CORS 代理（allorigins／codetabs／corsproxy）作為備援；這些代理僅用於轉發<b>公開的政府開放資料與新聞 RSS</b>，不會傳送任何個人資訊。若您在意第三方轉發，可取消勾選代理選項，並改以本機 HTTP 伺服器開啟本檔（例如在本資料夾執行 <code>python -m http.server</code> 後開啟 <code>http://localhost:8000</code>），部分來源即可直連。<br><b>更新範圍：</b>「台灣即時交易行情」與「新聞」為真正的即時數值更新；「FRA 資源評價」與「漁業統計年報」因原始資料為 PDF，僅能自動偵測新版是否發布，資源量、親魚量、F/Fmsy 等核心數列仍維持人工核校後寫入，以確保儀表板數值可回溯至原始報告。</div>
+</div>
+<!-- ===== 花腹鯖漁場速預報 ===== -->
+<div class="page" id="p_fg">
+  <div class="fg-warn" id="fgClosed" style="display:none"></div>
+
+  <div class="sec-title">花腹鯖漁場速預報</div>
+  <div class="card">
+    <h3>環境適合度指數 HSI <span class="jp">Habitat Suitability Index・臺灣東北部海域</span></h3>
+    <div class="sub">以衛星遙測海表溫（SST）、葉綠素 a 濃度（Chl-a）與溫度鋒面強度，計算 0.1&deg; 網格的花腹鯖環境適合度。範圍 24.0&ndash;27.2&deg;N、120.5&ndash;124.5&deg;E，涵蓋彭佳嶼、棉花嶼、宜蘭灣與釣魚台列嶼周邊</div>
+    <div class="bar">
+      <button class="btn" id="fgBtn">計算最新漁場速預報</button>
+      <button class="btn ghost" id="fgClr">清除快取</button>
+      <label class="switch"><input type="checkbox" id="fgProxy" checked>允許公用 CORS 代理</label>
+    </div>
+    <div class="prog"><i id="fgProg"></i></div>
+    <div id="fgMsg">尚未計算。點擊上方按鈕開始抓取衛星資料。</div>
+    <div class="grid g4" style="margin-top:16px">
+      <div class="st"><span class="dot" id="fg_d_sst"></span><span>海表溫 SST</span></div>
+      <div class="st"><span class="dot" id="fg_d_chl"></span><span>葉綠素 a</span></div>
+      <div class="st"><span class="dot" id="fg_d_grid"></span><span>HSI 網格計算</span></div>
+      <div class="st"><span class="dot" id="fg_d_tile"></span><span>衛星圖磚圖層</span></div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-top:16px" id="fgKpi">
+    <div class="kpi"><div class="lab">最高 HSI</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未計算</div></div>
+    <div class="kpi"><div class="lab">高適合度海域面積</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未計算</div></div>
+    <div class="kpi"><div class="lab">海域平均水溫</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未計算</div></div>
+    <div class="kpi"><div class="lab">鋒面最強處</div><div class="val" style="color:var(--ink3)">—</div><div class="note">尚未計算</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>漁場適合度分布圖 <span class="jp">HSI map</span></h3>
+    <div class="sub">紅橙色為高適合度區。可切換 NASA GIBS 衛星圖層對照；點擊地圖任一點可查詢該網格數值</div>
+    <div id="fgMap"></div>
+    <div class="fg-legend">
+      <span>HSI</span>
+      <i style="background:#2c3e6b"></i><span>0.0</span>
+      <i style="background:#2e7d9a"></i><span>0.25</span>
+      <i style="background:#7bd389"></i><span>0.5</span>
+      <i style="background:#f9c74f"></i><span>0.7</span>
+      <i style="background:#f4736c"></i><span>0.85</span>
+      <i style="background:#d0021b"></i><span>1.0</span>
+    </div>
+    <div class="legend" style="margin-top:6px" id="fgLayerNote"></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>建議探漁區 <span class="jp">Top candidate grids</span></h3>
+      <div class="sub">依 HSI 排序，已剔除相鄰重複網格。方位距離以南方澳漁港（24&deg;35'N, 121&deg;52'E）為起點</div>
+      <table id="fgTop"><tr><td style="color:var(--ink3);border:none">尚未計算</td></tr></table>
+    </div>
+    <div class="card"><h3>指數參數 <span class="jp">可依實測漁獲校正</span></h3>
+      <div class="sub">預設值取自文獻；水試所可依實際漁獲資料調整後重新計算</div>
+      <div id="fgParams"></div>
+      <div class="bar" style="margin-top:12px">
+        <button class="btn ghost" id="fgRecalc">套用參數重算</button>
+        <button class="btn ghost" id="fgReset">回復預設值</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h3>指數建構方法 <span class="jp">Methodology</span></h3>
+    <ul class="tight">
+      <li><b>適溫指數 SI<sub>SST</sub></b>：梯形隸屬函數。最適區間內為 1.0，向外線性遞減至容忍界限歸零。預設最適 <b>20&ndash;23&deg;C</b>、容忍 17&ndash;27&deg;C，依據花腹鯖棲地水溫較白腹鯖（15&ndash;22&deg;C）更暖且更窄之研究結果</li>
+      <li><b>適葉綠素指數 SI<sub>Chl</sub></b>：同為梯形函數，對濃度取以 10 為底之對數後計算。預設最適 <b>0.3&ndash;1.5 mg/m&sup3;</b>，對應陸棚鋒面帶之中等生產力水域</li>
+      <li><b>鋒面指數 SI<sub>Front</sub></b>：由 SST 網格計算水平溫度梯度大小（&deg;C／10 km），以飽和函數轉為 0&ndash;1。黑潮鋒面與溫度鋒面為鯖類聚集帶</li>
+      <li><b>綜合指數</b>：三者之加權幾何平均 HSI = (SI<sub>SST</sub><sup>w1</sup> &times; SI<sub>Chl</sub><sup>w2</sup> &times; SI<sub>Front</sub><sup>w3</sup>)<sup>1/(w1+w2+w3)</sup>。採幾何平均而非算術平均，任一因子極差時整體指數即顯著下降，避免單一高值掩蓋不利條件</li>
+      <li><b>雲遮處理</b>：Chl-a 受雲層影響常有缺值。若直接以剩餘兩因子計算，缺值網格會因「少了一個可能不利的因子」而被系統性高估，使雲層覆蓋區變成假熱區。本模組採三道防線：缺值網格之 HSI <b>乘以 0.9 信賴折扣</b>、圖上以較低透明度呈現、且<b>建議探漁區清單優先採用三因子俱全之網格</b>，僅在數量不足時才遞補並明確標示「缺值」</li>
+    </ul>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h3>資料來源</h3>
+    <ul class="tight">
+      <li><b>數值資料</b>：NOAA CoastWatch ERDDAP griddap — MUR L4 全球高解析海表溫（0.01&deg;）、MODIS Aqua／VIIRS 葉綠素 a 合成產品。<a href="https://coastwatch.pfeg.noaa.gov/erddap/" target="_blank">coastwatch.pfeg.noaa.gov/erddap</a></li>
+      <li><b>衛星圖磚</b>：NASA GIBS（Global Imagery Browse Services）— GHRSST MUR SST、MODIS Aqua Chl-a、MODIS Terra 真彩影像、OSCAR 表層海流。<a href="https://nasa-gibs.github.io/gibs-api-docs/" target="_blank">GIBS API 文件</a></li>
+      <li><b>底圖</b>：Esri Ocean Basemap／OpenStreetMap</li>
+      <li><b>生態參數文獻</b>：<a href="https://doi.org/10.3390/ani15192822" target="_blank">北太平洋公海花腹鯖與白腹鯖相對豐度分布及環境差異分析</a>（棲地水溫區間）；<a href="https://www.mdpi.com/2077-1312/9/12/1341" target="_blank">臺灣東北部花腹鯖繁殖研究</a>；<a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4812595" target="_blank">臺灣東北部花腹鯖產卵場時空變異</a>（SST／Chl-a／混合層深度／鹽度四因子產卵適合度）；<a href="https://www.mdpi.com/2410-3888/10/10/522" target="_blank">宜蘭灣花腹鯖產卵親魚量聲學估計 2021&ndash;2024</a></li>
+    </ul>
+  </div>
+
+  <div class="fg-disc"><b>使用限制與免責聲明</b>
+    <ol>
+      <li><b>本產品為環境適合度參考資訊，非漁獲保證。</b>HSI 反映的是水文環境對花腹鯖的適合程度，實際漁獲另受魚群洄游時序、月相、作業水深、漁具效率與船長經驗等因素影響，高 HSI 不等同高漁獲。</li>
+      <li><b>不得作為航行安全依據。</b>本圖不含水深、礁石、航道、氣象與海況資訊。出海作業前務必查詢中央氣象署海象與強風特報，並遵守航行安全規範。</li>
+      <li><b>須遵守漁業法規。</b>臺灣鯖鰺漁業每年 <b>6 月 1 日至 6 月 30 日為禁漁期</b>，另有年度總容許漁獲量（TAC 9 萬公噸）、指定卸魚港、漁撈日誌與全數秤量等規定，詳見本儀表板「管理與資源狀態」分頁。本預報不因高適合度而構成任何逾越法規之作業建議。</li>
+      <li><b>資料延遲。</b>衛星海表溫通常延遲 1&ndash;2 日，葉綠素 a 合成產品延遲 3&ndash;8 日，且受雲層覆蓋影響。指數係以最新可得影像計算，非即時觀測。</li>
+      <li><b>指數未經漁獲實證校正。</b>預設參數取自公開文獻，尚未以本所漁獲資料驗證。正式對外服務前，建議以歷史漁撈日誌與卸魚紀錄進行參數校正與準確度評估。</li>
+      <li><b>資源狀態提醒。</b>臺灣花腹鯖平均體長自 2013 年納管後回升，惟 2021 年再降至 28.3 公分，為納管以來最低。提高漁獲效率的同時，請一併考量資源永續與幼魚保護。</li>
+    </ol>
+  </div>
 </div>
 <!-- ===== 漁獲量 ===== -->
 <div class="page" id="p1">
@@ -545,7 +668,7 @@ const D = {"pac_years": [1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1
 const W = {"years": [1959, 1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], "total": [246327, 259137, 312432, 327048, 350730, 376399, 381638, 425277, 458222, 531170, 560917, 613152, 650167, 694331, 758486, 693570, 779952, 810602, 854917, 885043, 929328, 936336, 911679, 922522, 930583, 1002598, 1037721, 1094589, 1236172, 1360868, 1371665, 1455499, 1316653, 1327609, 1423973, 1255275, 1296889, 1239634, 1251048, 1301419, 1335099, 1333574, 1296256, 1376957, 1476314, 1273831, 1295111, 1262265, 1503701, 1341636, 1090218, 1169824, 1222650, 1251431, 1274282, 1407622, 1299261, 1005279, 1029723, 1089382, 1037512, 885041, 976000, 874696, 894863, 1038626], "offshore": [88168, 91169, 109598, 125279, 136559, 153744, 153944, 165560, 179522, 201275, 215140, 230306, 245507, 237905, 259450, 238015, 292739, 313864, 341620, 354440, 363805, 370129, 345580, 345083, 319634, 333392, 315379, 305839, 300150, 307660, 333309, 291910, 266566, 280188, 258071, 241698, 255816, 256252, 246305, 208873, 206220, 169008, 159800, 185655, 193159, 196674, 201162, 154740, 135417, 133323, 147364, 128782, 163536, 148250, 125021, 139928, 135298, 139173, 160140, 153529, 153102, 150013, 148374, 115325, 158516, 147298], "kinchaku": [12967, 9587, 18436, 22735, 20105, 23753, 17630, 21856, 26558, 26619, 33571, 19071, 27194, 24352, 30652, 17957, 17991, 20167, 36783, 37048, 25964, 25620, 33397, 24364, 20977, 21567, 34014, 29759, 27910, 22937, 16471, 9826, 6605, 13887, 11092, 5366, 13770, 16444, 14941, 13449, 5394, 4141, 2197, 2540, 3387, 3867, 2498, 858, 1595, 978, 765, 1233, 115, 121, 97, 88, 75, 133, 2080, 85, 139, 205, 326, 50, 80, 41], "seine": [null, null, null, null, null, null, null, null, 29, 415, 287, 1984, 765, 220, null, null, null, null, 2189, 3990, 20358, 19918, 17213, 23444, 20432, 30297, 28054, 34027, 23036, 32434, 43351, 53897, 42734, 60858, 63849, 71941, 61961, 77075, 69703, 42331, 58843, 26941, 22205, 34016, 45464, 46640, 45560, 27108, 13474, 15943, 63872, 57775, 5221, 2007, 48, null, null, null, null, null, null, null, null, null, null, null], "bou": [18228, 19563, 28172, 32869, 41470, 37874, 29447, 23891, 19370, 24939, 22868, 33617, 32473, 31750, 29750, 28090, 32002, 26722, 21680, 17840, 26318, 19139, 23735, 24745, 20951, 18442, 23345, 18930, 20818, 21118, 34468, 34132, 24292, 23156, 16897, 21542, 18633, 16960, 19556, 24768, 28376, 23727, 20728, 24163, 29819, 28621, 36640, 25536, 32690, 40155, 6041, 4174, 1932, 1428, 1421, 4375, 4728, 5370, 7349, 2580, 5957, 8013, 6112, 6041, 6542, 7873], "panet": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 85090, 81519, 66697, 76787, 84410, 80448, 85638, 94465, 90153, 93791, 97204, 69881, 98782, 93948], "mackerel_fishery": [null, null, null, null, null, null, null, null, 29, 415, 287, 1984, 765, 220, null, null, null, null, 2189, 3990, 20358, 19918, 17213, 23444, 20432, 30297, 28054, 34027, 23036, 32434, 43351, 53897, 42734, 60858, 63849, 71941, 61961, 77075, 69703, 42331, 58843, 26941, 22205, 34016, 45464, 46640, 45560, 27108, 13474, 15943, 63872, 57775, 85090, 81519, 66697, 76787, 84410, 80448, 85638, 94465, 90153, 93791, 97204, 69881, 98782, 93948], "mf_kind": [null, null, null, null, null, null, null, null, "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", null, null, null, null, "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "鯖鰺圍網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網", "扒網"], "county2024_gomasaba": [["基隆市", 27568, 1728520], ["宜蘭縣", 19361, 929349], ["新北市", 15741, 472230], ["高雄市", 111, 6392], ["澎湖縣", 66, 461], ["花蓮縣", 54, 2544], ["臺東縣", 9, 851], ["新竹市", 2, 168], ["臺中市", 1, 40]], "county2024_maaji": [["基隆市", 5790, 210759], ["新北市", 4368, 109197], ["宜蘭縣", 3772, 161146], ["澎湖縣", 483, 4997], ["高雄市", 177, 8841], ["苗栗縣", 116, 4542], ["新竹市", 61, 4461], ["臺南市", 36, 1113], ["彰化縣", 6, 550], ["嘉義縣", 5, 166], ["花蓮縣", 5, 556], ["桃園市", 4, 181], ["臺中市", 3, 152], ["新竹縣", 1, 103]], "panet2024": [["花腹鯖", 62201, 3105191], ["其他鯖科（主為白腹鯖）", 11288, 554891], ["其他鰺科", 1747, 64000], ["圓花鰹", 1731, 73003], ["眼眶魚", 1696, 51000], ["正鰹", 1118, 32038], ["黃鰭鮪", 733, 49419], ["真鰺", 504, 18000], ["其他鰹類", 231, 8260], ["扁花鰹", 210, 9003], ["其他海水魚類", 178, 15000], ["帶魚屬", 170, 23304]], "saba2024": [["正鰹", 205774], ["花腹鯖", 62915], ["長鰭鮪", 52067], ["黃鰭鮪", 49772], ["大目鮪", 35403], ["其他鯖科（含白腹鯖）", 12328], ["圓花鰹", 4735], ["太平洋黑鮪", 2261], ["其他鰆類", 1432], ["南方黑鮪", 1353], ["康氏馬加鰆", 789], ["其他鰹類", 669], ["扁花鰹", 657], ["日本馬加鰆", 244]], "totals2024": {"gomasaba_q": 62915, "gomasaba_v": 3140565, "maaji_q": 14825, "maaji_v": 506794, "saba_family_q": 430399, "panet_q": 93948, "panet_v": 4433297, "offshore_q": 147298, "grand_q": 1038626, "other_saba_q": 12328, "other_saba_v": 699313}};
 const _C=Chart; window.Chart=function(el,cfg){try{return new _C(el,cfg);}catch(e){console.error('chart fail',el&&el.id,e);}};
 Chart.defaults=_C.defaults; Chart.register=_C.register&&_C.register.bind(_C);
-const TABS=["總覽","最新資訊","漁獲量趨勢","資源動態","體長・體重・年齡結構","臺灣鯖魚專頁","管理與資源狀態","資料來源"];
+const TABS=["總覽","最新資訊","漁場速預報","漁獲量趨勢","資源動態","體長・體重・年齡結構","臺灣鯖魚專頁","管理與資源狀態","資料來源"];
 const tb=document.getElementById('tabs');
 TABS.forEach((t,i)=>{const b=document.createElement('button');b.className='tab'+(i==0?' on':'');b.textContent=t;
  b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');
@@ -1135,6 +1258,483 @@ async function runUpdate() {
   }
   const gl = $('goLive');
   if (gl) gl.onclick = e => { e.preventDefault(); const t = document.querySelectorAll('.tab')[1]; if (t) t.click(); };
+})();
+
+/* ==========================================================
+   花腹鯖漁場速預報 — 環境適合度指數 HSI
+   資料：NOAA CoastWatch ERDDAP（數值）＋ NASA GIBS（圖磚）
+   全部瀏覽器端運算，無後端
+   ========================================================== */
+const FG_KEY = 'sabaDash.fg.v1';
+const FG_BOX = { latMin: 24.0, latMax: 27.2, lonMin: 120.5, lonMax: 124.5 };
+const FG_PORT = { lat: 24.5861, lon: 121.8678, name: '南方澳' };
+
+const FG_DEF = {
+  sstLo: 17, sstOptLo: 20, sstOptHi: 23, sstHi: 27,
+  chlLo: 0.05, chlOptLo: 0.3, chlOptHi: 1.5, chlHi: 5.0,
+  frontSat: 0.5, wSst: 5, wChl: 3, wFront: 2
+};
+let FG_P = Object.assign({}, FG_DEF);
+const FG_MISS_PENALTY = 0.9;   /* 葉綠素缺值網格之信賴折扣 */
+
+const FG_SPEC = [
+  ['sstLo', '水溫容忍下限', '°C', 10, 24, 0.5], ['sstOptLo', '水溫最適下限', '°C', 14, 26, 0.5],
+  ['sstOptHi', '水溫最適上限', '°C', 16, 30, 0.5], ['sstHi', '水溫容忍上限', '°C', 18, 33, 0.5],
+  ['chlLo', '葉綠素容忍下限', 'mg/m³', 0.01, 0.5, 0.01], ['chlOptLo', '葉綠素最適下限', 'mg/m³', 0.05, 2, 0.05],
+  ['chlOptHi', '葉綠素最適上限', 'mg/m³', 0.2, 5, 0.05], ['chlHi', '葉綠素容忍上限', 'mg/m³', 1, 20, 0.5],
+  ['frontSat', '鋒面飽和梯度', '°C/10km', 0.1, 2, 0.05],
+  ['wSst', '水溫權重', '', 0, 10, 1], ['wChl', '葉綠素權重', '', 0, 10, 1], ['wFront', '鋒面權重', '', 0, 10, 1]
+];
+
+/* ERDDAP 候選資料集（依序嘗試） */
+const FG_SST_SETS = [
+  { srv: 'https://coastwatch.pfeg.noaa.gov/erddap', id: 'jplMURSST41', v: 'analysed_sst', st: 10, k: 'MUR L4 0.01°（每日）' },
+  { srv: 'https://coastwatch.noaa.gov/erddap', id: 'noaacwBLENDEDsstDNDaily', v: 'analysed_sst', st: 2, k: 'Blended SST 0.05°（每日）' },
+  { srv: 'https://coastwatch.pfeg.noaa.gov/erddap', id: 'nceiPH53sstd1day', v: 'sea_surface_temperature', st: 3, k: 'Pathfinder 0.04°（每日）' }
+];
+const FG_CHL_SETS = [
+  { srv: 'https://coastwatch.pfeg.noaa.gov/erddap', id: 'erdMH1chla8day', v: 'chlorophyll', st: 3, k: 'MODIS Aqua 8 日合成' },
+  { srv: 'https://coastwatch.pfeg.noaa.gov/erddap', id: 'erdVHNchla8day', v: 'chla', st: 3, k: 'VIIRS 8 日合成' },
+  { srv: 'https://coastwatch.noaa.gov/erddap', id: 'noaacwNPPVIIRSchlaDaily', v: 'chlor_a', st: 2, k: 'VIIRS 每日' }
+];
+
+/* GIBS 圖層 */
+const FG_GIBS = [
+  { id: 'GHRSST_L4_MUR_Sea_Surface_Temperature', name: '海表溫 SST（MUR）', tms: 'GoogleMapsCompatible_Level7', fmt: 'png', lag: 2 },
+  { id: 'MODIS_Aqua_Chlorophyll_A', name: '葉綠素 a（MODIS Aqua）', tms: 'GoogleMapsCompatible_Level7', fmt: 'png', lag: 3 },
+  { id: 'OSCAR_Sea_Surface_Currents_Zonal', name: '表層海流 東西分量（OSCAR）', tms: 'GoogleMapsCompatible_Level5', fmt: 'png', lag: 7 },
+  { id: 'MODIS_Terra_CorrectedReflectance_TrueColor', name: '真彩衛星影像（MODIS Terra）', tms: 'GoogleMapsCompatible_Level9', fmt: 'jpg', lag: 1 }
+];
+
+const fgSetDot = (id, c) => { const e = $(id); if (e) e.className = 'dot' + (c ? ' ' + c : ''); };
+const fgMsg = t => { const e = $('fgMsg'); if (e) e.innerHTML = t; };
+const fgProg = p => { const e = $('fgProg'); if (e) e.style.width = Math.max(0, Math.min(100, p)) + '%'; };
+
+async function fgFetch(url, timeout) {
+  const useProxy = $('fgProxy') ? $('fgProxy').checked : true;
+  const chain = [u => u].concat(useProxy ? PROXIES : []);
+  const errs = [];
+  for (let i = 0; i < chain.length; i++) {
+    try {
+      const t = await rawFetch(chain[i](url), timeout || 30000);
+      if (t && t.length) return t;
+    } catch (e) { errs.push((i === 0 ? '直連' : '代理' + i) + '：' + e.message); }
+  }
+  throw new Error(errs.join(' ／ '));
+}
+
+function fgUrl(s, withAlt) {
+  const b = FG_BOX;
+  const alt = withAlt ? '[(0.0)]' : '';
+  return s.srv + '/griddap/' + s.id + '.json?' + s.v +
+    '[(last)]' + alt +
+    '[(' + b.latMin + '):' + s.st + ':(' + b.latMax + ')]' +
+    '[(' + b.lonMin + '):' + s.st + ':(' + b.lonMax + ')]';
+}
+
+/* 解析 ERDDAP JSON → {lats, lons, val:Map, time} */
+function fgParse(txt, varName) {
+  const j = JSON.parse(txt);
+  const t = j.table;
+  if (!t || !t.rows) throw new Error('ERDDAP 回應格式不符');
+  const ci = n => t.columnNames.indexOf(n);
+  const iLat = ci('latitude'), iLon = ci('longitude'), iTime = ci('time');
+  let iVal = ci(varName);
+  if (iVal < 0) iVal = t.columnNames.length - 1;
+  if (iLat < 0 || iLon < 0) throw new Error('回應缺少經緯度欄位');
+  const latS = {}, lonS = {}, val = {};
+  let time = null;
+  t.rows.forEach(r => {
+    const la = +(+r[iLat]).toFixed(4), lo = +(+r[iLon]).toFixed(4);
+    let v = r[iVal];
+    if (v === null || v === undefined || v === '' || isNaN(+v)) v = null; else v = +v;
+    if (v !== null && v > 100) v = v - 273.15;          // Kelvin 保險
+    latS[la] = 1; lonS[lo] = 1;
+    val[la + '|' + lo] = v;
+    if (time === null && iTime >= 0) time = r[iTime];
+  });
+  const lats = Object.keys(latS).map(Number).sort((a, b) => a - b);
+  const lons = Object.keys(lonS).map(Number).sort((a, b) => a - b);
+  if (!lats.length || !lons.length) throw new Error('回應無有效網格點');
+  return { lats, lons, val, time };
+}
+
+async function fgGetSet(sets, prog, p0, p1) {
+  const errs = [];
+  for (let i = 0; i < sets.length; i++) {
+    for (const withAlt of [false, true]) {
+      try {
+        const txt = await fgFetch(fgUrl(sets[i], withAlt), 35000);
+        if (/<html|Error|message=/i.test(txt.slice(0, 200)) && txt.indexOf('"table"') < 0)
+          throw new Error('伺服器回傳錯誤訊息');
+        const g = fgParse(txt, sets[i].v);
+        g.source = sets[i].k; g.id = sets[i].id;
+        return g;
+      } catch (e) { errs.push(sets[i].id + (withAlt ? '(alt)' : '') + '：' + e.message.slice(0, 50)); }
+    }
+    prog(p0 + (p1 - p0) * (i + 1) / sets.length);
+  }
+  throw new Error(errs.slice(0, 3).join(' ／ '));
+}
+
+/* ---------- 隸屬函數 ---------- */
+function trap(x, a, b, c, d) {
+  if (x === null || isNaN(x)) return null;
+  if (x <= a || x >= d) return 0;
+  if (x >= b && x <= c) return 1;
+  if (x < b) return b === a ? 1 : (x - a) / (b - a);
+  return d === c ? 1 : (d - x) / (d - c);
+}
+const lg = v => Math.log10(Math.max(v, 1e-4));
+
+/* ---------- HSI 網格計算 ---------- */
+function fgCompute(sst, chl) {
+  const lats = sst.lats, lons = sst.lons;
+  const dLatKm = 111.32 * (lats.length > 1 ? (lats[1] - lats[0]) : 0.1);
+  const cells = [];
+  const at = (g, la, lo) => {
+    const v = g.val[la + '|' + lo];
+    return v === undefined ? null : v;
+  };
+  const nearest = (g, la, lo) => {
+    if (!g) return null;
+    let bl = null, bd = 1e9;
+    for (const x of g.lats) { const d = Math.abs(x - la); if (d < bd) { bd = d; bl = x; } }
+    let bn = null, bd2 = 1e9;
+    for (const y of g.lons) { const d = Math.abs(y - lo); if (d < bd2) { bd2 = d; bn = y; } }
+    if (bl === null || bn === null || bd > 0.35 || bd2 > 0.35) return null;
+    const v = g.val[bl + '|' + bn];
+    return v === undefined ? null : v;
+  };
+
+  const wS = FG_P.wSst, wC = FG_P.wChl, wF = FG_P.wFront;
+  for (let i = 0; i < lats.length; i++) {
+    for (let j = 0; j < lons.length; j++) {
+      const la = lats[i], lo = lons[j];
+      const t = at(sst, la, lo);
+      if (t === null) continue;
+      const dLonKm = 111.32 * Math.cos(la * Math.PI / 180) * (lons.length > 1 ? (lons[1] - lons[0]) : 0.1);
+      /* 鋒面：中央差分梯度 */
+      let gx = 0, gy = 0, ok = 0;
+      if (j > 0 && j < lons.length - 1) {
+        const a = at(sst, la, lons[j - 1]), b = at(sst, la, lons[j + 1]);
+        if (a !== null && b !== null && dLonKm > 0) { gx = (b - a) / (2 * dLonKm); ok++; }
+      }
+      if (i > 0 && i < lats.length - 1) {
+        const a = at(sst, lats[i - 1], lo), b = at(sst, lats[i + 1], lo);
+        if (a !== null && b !== null && dLatKm > 0) { gy = (b - a) / (2 * dLatKm); ok++; }
+      }
+      const grad10 = ok ? Math.sqrt(gx * gx + gy * gy) * 10 : 0;   // °C / 10 km
+
+      const c = nearest(chl, la, lo);
+      const siS = trap(t, FG_P.sstLo, FG_P.sstOptLo, FG_P.sstOptHi, FG_P.sstHi);
+      const siC = c === null ? null : trap(lg(c), lg(FG_P.chlLo), lg(FG_P.chlOptLo), lg(FG_P.chlOptHi), lg(FG_P.chlHi));
+      const siF = Math.min(1, grad10 / Math.max(FG_P.frontSat, 1e-6));
+
+      let hsi, wsum;
+      const e = 1e-6;
+      if (siC === null) {
+        /* 葉綠素缺值（多為雲遮）：僅以水溫與鋒面計算，並乘上信賴折扣，
+           避免無資料網格因少了一個可能不利的因子而被高估為熱區 */
+        wsum = wS + wF;
+        hsi = wsum > 0 ? Math.pow(Math.pow(siS + e, wS) * Math.pow(siF + e, wF), 1 / wsum) : 0;
+        hsi *= FG_MISS_PENALTY;
+      } else {
+        wsum = wS + wC + wF;
+        hsi = wsum > 0 ? Math.pow(Math.pow(siS + e, wS) * Math.pow(siC + e, wC) * Math.pow(siF + e, wF), 1 / wsum) : 0;
+      }
+      cells.push({ la, lo, sst: +t.toFixed(2), chl: c === null ? null : +c.toFixed(3), grad: +grad10.toFixed(3), hsi: +hsi.toFixed(4), noChl: siC === null });
+    }
+  }
+  return { cells, lats, lons, dLat: lats.length > 1 ? lats[1] - lats[0] : 0.1, dLon: lons.length > 1 ? lons[1] - lons[0] : 0.1 };
+}
+
+/* ---------- 顏色 ---------- */
+function fgColor(h) {
+  const stops = [[0, 44, 62, 107], [0.25, 46, 125, 154], [0.5, 123, 211, 137], [0.7, 249, 199, 79], [0.85, 244, 115, 108], [1, 208, 2, 27]];
+  if (h <= 0) return [44, 62, 107];
+  for (let i = 1; i < stops.length; i++) {
+    if (h <= stops[i][0]) {
+      const a = stops[i - 1], b = stops[i], f = (h - a[0]) / (b[0] - a[0] || 1);
+      return [1, 2, 3].map(k => Math.round(a[k] + (b[k] - a[k]) * f));
+    }
+  }
+  return [208, 2, 27];
+}
+
+/* ---------- 地圖 ---------- */
+let fgMap = null, fgOverlay = null, fgMarks = [], fgTileLayers = {};
+function fgGibsUrl(L, dateStr) {
+  return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/' + L.id +
+    '/default/' + dateStr + '/' + L.tms + '/{z}/{y}/{x}.' + L.fmt;
+}
+function fgDateStr(lagDays) {
+  const d = new Date(Date.now() - lagDays * 864e5);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function fgInitMap() {
+  if (fgMap || typeof L === 'undefined' || !$('fgMap')) return;
+  fgMap = L.map('fgMap', { center: [25.6, 122.3], zoom: 7, worldCopyJump: false });
+  const ocean = L.tileLayer(
+    'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 13, attribution: 'Esri Ocean Basemap' });
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' });
+  ocean.addTo(fgMap);
+  const overlays = {};
+  let tileOk = 0;
+  FG_GIBS.forEach(g => {
+    try {
+      const tl = L.tileLayer(fgGibsUrl(g, fgDateStr(g.lag)), {
+        maxZoom: 9, opacity: 0.7, attribution: 'NASA GIBS', crossOrigin: true
+      });
+      overlays[g.name + ' <span style="color:#6d8aa4">' + fgDateStr(g.lag) + '</span>'] = tl;
+      fgTileLayers[g.id] = tl;
+      tileOk++;
+    } catch (e) {}
+  });
+  L.control.layers({ '海洋底圖 Esri': ocean, '街道圖 OSM': osm }, overlays, { collapsed: false }).addTo(fgMap);
+  L.marker([FG_PORT.lat, FG_PORT.lon]).addTo(fgMap).bindPopup('南方澳漁港');
+  L.rectangle([[FG_BOX.latMin, FG_BOX.lonMin], [FG_BOX.latMax, FG_BOX.lonMax]],
+    { color: '#4cc9f0', weight: 1, fill: false, dashArray: '4,4' }).addTo(fgMap);
+  fgSetDot('fg_d_tile', tileOk ? 'ok' : 'bad');
+  const note = $('fgLayerNote');
+  if (note) note.innerHTML = '衛星圖層以 NASA GIBS 提供，日期已扣除各產品之資料延遲。若圖磚空白，多為當日雲量過高或該產品尚未更新。';
+}
+
+function fgDraw(G) {
+  if (!fgMap || !G) return;
+  const nLat = G.lats.length, nLon = G.lons.length;
+  const cv = document.createElement('canvas');
+  cv.width = nLon; cv.height = nLat;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(nLon, nLat);
+  const idx = {};
+  G.cells.forEach(c => { idx[c.la + '|' + c.lo] = c; });
+  for (let i = 0; i < nLat; i++) {
+    for (let j = 0; j < nLon; j++) {
+      const c = idx[G.lats[nLat - 1 - i] + '|' + G.lons[j]];
+      const o = (i * nLon + j) * 4;
+      if (!c) { img.data[o + 3] = 0; continue; }
+      const rgb = fgColor(c.hsi);
+      img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2];
+      img.data[o + 3] = c.noChl ? 130 : 190;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  if (fgOverlay) { try { fgMap.removeLayer(fgOverlay); } catch (e) {} }
+  const b = [[G.lats[0] - G.dLat / 2, G.lons[0] - G.dLon / 2],
+             [G.lats[nLat - 1] + G.dLat / 2, G.lons[nLon - 1] + G.dLon / 2]];
+  fgOverlay = L.imageOverlay(cv.toDataURL(), b, { opacity: 0.72, interactive: false }).addTo(fgMap);
+
+  fgMarks.forEach(m => { try { fgMap.removeLayer(m); } catch (e) {} });
+  fgMarks = [];
+  G.top.forEach((c, i) => {
+    const m = L.circleMarker([c.la, c.lo], {
+      radius: 8 - Math.min(4, i * 0.4), color: '#fff', weight: 2,
+      fillColor: 'rgb(' + fgColor(c.hsi).join(',') + ')', fillOpacity: .95
+    }).addTo(fgMap);
+    m.bindPopup('<b>第 ' + (i + 1) + ' 順位</b><br>' + fgDM(c.la, true) + ' ' + fgDM(c.lo, false) +
+      '<br>HSI ' + c.hsi.toFixed(3) + '<br>水溫 ' + c.sst + ' °C' +
+      '<br>葉綠素 ' + (c.chl === null ? '缺值（雲遮）' : c.chl + ' mg/m³') +
+      '<br>鋒面 ' + c.grad + ' °C/10km');
+    fgMarks.push(m);
+  });
+  setTimeout(() => { try { fgMap.invalidateSize(); } catch (e) {} }, 120);
+}
+
+/* ---------- 方位距離 ---------- */
+function fgBearingDist(la, lo) {
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (la - FG_PORT.lat) * r, dLon = (lo - FG_PORT.lon) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(FG_PORT.lat * r) * Math.cos(la * r) * Math.sin(dLon / 2) ** 2;
+  const km = 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+  const y = Math.sin(dLon) * Math.cos(la * r);
+  const x = Math.cos(FG_PORT.lat * r) * Math.sin(la * r) - Math.sin(FG_PORT.lat * r) * Math.cos(la * r) * Math.cos(dLon);
+  let br = (Math.atan2(y, x) / r + 360) % 360;
+  const dirs = ['北', '北北東', '東北', '東北東', '東', '東南東', '東南', '南南東', '南', '南南西', '西南', '西南西', '西', '西北西', '西北', '北北西'];
+  return { km: km, nm: km / 1.852, br: br, dir: dirs[Math.round(br / 22.5) % 16] };
+}
+function fgDM(v, isLat) {
+  const h = isLat ? (v >= 0 ? 'N' : 'S') : (v >= 0 ? 'E' : 'W');
+  const a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60;
+  return d + '°' + m.toFixed(1) + "'" + h;
+}
+
+/* ---------- 渲染 ---------- */
+function fgRender(S) {
+  if (!S || !S.grid) return;
+  const G = S.grid, cells = G.cells;
+  if (!cells.length) return;
+  const valid = cells.filter(c => c.sst !== null);
+  const best = G.top[0];
+  const hi = cells.filter(c => c.hsi >= 0.7).length;
+  const cellKm2 = (111.32 * G.dLat) * (111.32 * Math.cos(25.6 * Math.PI / 180) * G.dLon);
+  const meanT = valid.reduce((a, c) => a + c.sst, 0) / valid.length;
+  const maxG = cells.reduce((a, c) => c.grad > a.grad ? c : a, cells[0]);
+
+  $('fgKpi').innerHTML =
+    kpi('最高 HSI', best.hsi.toFixed(3), '', 'var(--warn)', fgDM(best.la, true) + ' ' + fgDM(best.lo, false) + '｜水溫 ' + best.sst + ' °C') +
+    kpi('高適合度海域', Math.round(hi * cellKm2).toLocaleString(), 'km²', 'var(--acc2)', 'HSI ≥ 0.7 之網格共 ' + hi + ' 格，占有效海域 ' + (hi / valid.length * 100).toFixed(1) + '%｜雲遮率 ' + (G.cloudPct === undefined ? '—' : G.cloudPct + '%')) +
+    kpi('海域平均水溫', meanT.toFixed(2), '°C', 'var(--acc)', '有效網格 ' + valid.length + ' 格｜最適區間 ' + FG_P.sstOptLo + '–' + FG_P.sstOptHi + ' °C') +
+    kpi('鋒面最強處', maxG.grad.toFixed(2), '°C/10km', 'var(--pur)', fgDM(maxG.la, true) + ' ' + fgDM(maxG.lo, false) + '｜溫度鋒面為聚魚帶');
+
+  let h = '<tr><th>順位</th><th>位置</th><th class="num">HSI</th><th class="num">水溫</th><th class="num">葉綠素</th><th class="num">鋒面</th><th>距南方澳</th></tr>';
+  G.top.forEach((c, i) => {
+    const bd = fgBearingDist(c.la, c.lo);
+    h += '<tr><td><b>' + (i + 1) + '</b></td><td>' + fgDM(c.la, true) + '<br><span class="jp">' + fgDM(c.lo, false) + '</span></td>' +
+      '<td class="num" style="color:' + (c.hsi >= 0.7 ? '#ff9b95' : '#f9c74f') + ';font-weight:600">' + c.hsi.toFixed(3) + '</td>' +
+      '<td class="num">' + c.sst + '</td>' +
+      '<td class="num">' + (c.chl === null ? '<span style="color:var(--ink3)">缺值</span>' : c.chl) + '</td>' +
+      '<td class="num">' + c.grad.toFixed(2) + '</td>' +
+      '<td>' + bd.dir + ' ' + bd.nm.toFixed(0) + ' 浬<br><span class="jp">' + bd.br.toFixed(0) + '° / ' + bd.km.toFixed(0) + ' km</span></td></tr>';
+  });
+  h += '<tr><td colspan="7" style="font-size:11px;color:#6d8aa4;border:none;padding-top:8px">' +
+    '水溫單位 °C、葉綠素 mg/m³、鋒面 °C/10km。清單優先列出三因子俱全的網格（共 ' + (G.nFull === undefined ? '—' : G.nFull) +
+    ' 格）；標示「缺值」者為葉綠素受雲層遮蔽，HSI 僅以水溫與鋒面計算並已乘上 ' + FG_MISS_PENALTY +
+    ' 信賴折扣，僅在有效網格不足時遞補，判讀時請留意其不確定性較高。</td></tr>';
+  $('fgTop').innerHTML = h;
+
+  fgInitMap();
+  fgDraw(G);
+
+  const el = $('fgMsg');
+  if (el) el.innerHTML = '計算完成（' + S.at + '）<br>' +
+    '海表溫：' + esc(S.sstSrc) + '，影像時間 ' + esc(String(S.sstTime || '').slice(0, 10)) + '｜' +
+    '葉綠素：' + (S.chlSrc ? esc(S.chlSrc) + '，影像時間 ' + esc(String(S.chlTime || '').slice(0, 10)) : '<span style="color:#ff9b95">未取得</span>') +
+    '｜網格 ' + G.lats.length + '×' + G.lons.length + '，有效 ' + valid.length + ' 格';
+}
+
+/* ---------- 參數面板 ---------- */
+function fgBuildParams() {
+  const box = $('fgParams');
+  if (!box) return;
+  box.innerHTML = FG_SPEC.map(s =>
+    '<div class="fg-row"><label>' + s[1] + (s[2] ? ' <span class="jp">' + s[2] + '</span>' : '') + '</label>' +
+    '<input type="range" id="fgp_' + s[0] + '" min="' + s[3] + '" max="' + s[4] + '" step="' + s[5] + '" value="' + FG_P[s[0]] + '">' +
+    '<span class="fg-val" id="fgv_' + s[0] + '">' + FG_P[s[0]] + '</span></div>').join('');
+  FG_SPEC.forEach(s => {
+    const r = $('fgp_' + s[0]);
+    if (r) r.oninput = () => { FG_P[s[0]] = +r.value; $('fgv_' + s[0]).textContent = r.value; };
+  });
+}
+
+/* ---------- 禁漁期提醒 ---------- */
+function fgClosedSeason() {
+  const d = new Date(), m = d.getMonth() + 1;
+  const el = $('fgClosed');
+  if (!el) return;
+  if (m === 6) {
+    el.style.display = 'block';
+    el.innerHTML = '<b>禁漁期實施中</b>　依《鯖鰺漁業管理辦法》，每年 6 月 1 日至 6 月 30 日為鯖鰺漁業禁漁期，本期間不得從事鯖鰺漁撈作業。本頁資訊僅供資源與環境監測參考，不構成任何作業建議。';
+  } else if (m === 5) {
+    el.style.display = 'block';
+    el.style.borderLeftColor = '#f9c74f';
+    el.innerHTML = '<b>禁漁期預告</b>　6 月 1 日起進入鯖鰺漁業禁漁期（至 6 月 30 日止），請提前規劃作業排程。';
+  } else { el.style.display = 'none'; }
+}
+
+/* ---------- 主流程 ---------- */
+let fgBusy = false, fgLastGrids = null;
+async function fgRun() {
+  if (fgBusy) return;
+  fgBusy = true; $('fgBtn').disabled = true;
+  ['fg_d_sst', 'fg_d_chl', 'fg_d_grid'].forEach(d => fgSetDot(d, ''));
+  fgProg(4);
+  const S = { at: nowStr() };
+
+  fgSetDot('fg_d_sst', 'run');
+  fgMsg('步驟 1／3：向 NOAA CoastWatch ERDDAP 取得最新海表溫網格…');
+  let sst = null, chl = null;
+  try {
+    sst = await fgGetSet(FG_SST_SETS, fgProg, 5, 45);
+    S.sstSrc = sst.source; S.sstTime = sst.time;
+    fgSetDot('fg_d_sst', 'ok');
+  } catch (e) {
+    fgSetDot('fg_d_sst', 'bad');
+    fgMsg('<span style="color:#ff9b95">海表溫取得失敗：' + esc(e.message) + '</span>' +
+      '<br><span style="color:var(--ink3)">SST 為必要因子，無法繼續。請確認已勾選「允許公用 CORS 代理」後重試；若持續失敗，可能是 ERDDAP 伺服器維護或資料集代號變更。</span>');
+    fgProg(0); $('fgBtn').disabled = false; fgBusy = false; return;
+  }
+
+  fgSetDot('fg_d_chl', 'run'); fgProg(48);
+  fgMsg('步驟 2／3：取得葉綠素 a 合成影像…');
+  try {
+    chl = await fgGetSet(FG_CHL_SETS, fgProg, 48, 78);
+    S.chlSrc = chl.source; S.chlTime = chl.time;
+    fgSetDot('fg_d_chl', 'ok');
+  } catch (e) { fgSetDot('fg_d_chl', 'bad'); S.chlErr = e.message; }
+
+  fgSetDot('fg_d_grid', 'run'); fgProg(84);
+  fgMsg('步驟 3／3：計算環境適合度指數…');
+  fgLastGrids = { sst: sst, chl: chl, meta: S };
+  S.grid = fgFinish(sst, chl);
+  fgSetDot('fg_d_grid', S.grid.cells.length ? 'ok' : 'bad');
+
+  fgProg(100);
+  fgRender(S);
+  try { localStorage.setItem(FG_KEY, JSON.stringify({ at: S.at, sstSrc: S.sstSrc, sstTime: S.sstTime, chlSrc: S.chlSrc, chlTime: S.chlTime, grid: S.grid, p: FG_P })); } catch (e) {}
+  $('fgBtn').disabled = false; fgBusy = false;
+  setTimeout(() => fgProg(0), 1500);
+}
+
+function fgFinish(sst, chl) {
+  const G = fgCompute(sst, chl);
+  const sep = (list, c) => list.every(t => Math.abs(t.la - c.la) > 0.14 || Math.abs(t.lo - c.lo) > 0.14);
+  const pick = pool => {
+    const out = [];
+    for (const c of pool) { if (out.length >= 12) break; if (sep(out, c)) out.push(c); }
+    return out;
+  };
+  /* 優先採用三因子俱全的網格；不足 12 筆時才以缺值網格遞補並標示 */
+  const full = G.cells.filter(c => !c.noChl).sort((a, b) => b.hsi - a.hsi);
+  const miss = G.cells.filter(c => c.noChl).sort((a, b) => b.hsi - a.hsi);
+  let top = pick(full);
+  if (top.length < 12) {
+    for (const c of miss) { if (top.length >= 12) break; if (sep(top, c)) top.push(c); }
+  }
+  G.top = top;
+  G.nMiss = miss.length;
+  G.nFull = full.length;
+  G.cloudPct = G.cells.length ? +(miss.length / G.cells.length * 100).toFixed(1) : 0;
+  return G;
+}
+
+/* ---------- 啟動 ---------- */
+(function fgInit() {
+  fgClosedSeason();
+  fgBuildParams();
+  const b = $('fgBtn'); if (b) b.onclick = fgRun;
+  const rc = $('fgRecalc');
+  if (rc) rc.onclick = () => {
+    if (!fgLastGrids) { fgMsg('尚無已下載的衛星資料可重算，請先按「計算最新漁場速預報」。'); return; }
+    const S = Object.assign({}, fgLastGrids.meta);
+    S.at = nowStr() + '（參數重算）';
+    S.grid = fgFinish(fgLastGrids.sst, fgLastGrids.chl);
+    fgRender(S);
+    try { localStorage.setItem(FG_KEY, JSON.stringify({ at: S.at, sstSrc: S.sstSrc, sstTime: S.sstTime, chlSrc: S.chlSrc, chlTime: S.chlTime, grid: S.grid, p: FG_P })); } catch (e) {}
+  };
+  const rs = $('fgReset');
+  if (rs) rs.onclick = () => { FG_P = Object.assign({}, FG_DEF); fgBuildParams(); };
+  const cl = $('fgClr');
+  if (cl) cl.onclick = () => { try { localStorage.removeItem(FG_KEY); } catch (e) {} fgMsg('已清除漁場速預報快取。'); };
+
+  let S = null;
+  try { S = JSON.parse(localStorage.getItem(FG_KEY) || 'null'); } catch (e) {}
+  if (S && S.grid) {
+    if (S.p) { FG_P = Object.assign({}, FG_DEF, S.p); fgBuildParams(); }
+    fgRender(S);
+    ['fg_d_sst', 'fg_d_grid'].forEach(d => fgSetDot(d, 'ok'));
+    fgSetDot('fg_d_chl', S.chlSrc ? 'ok' : 'bad');
+    fgMsg('顯示的是上次計算結果（' + esc(S.at || '') + '）。點擊「計算最新漁場速預報」重新抓取衛星資料。');
+  }
+  /* 切到本分頁時修正地圖尺寸 */
+  document.addEventListener('click', e => {
+    if (e.target && e.target.classList && e.target.classList.contains('tab')) {
+      setTimeout(() => { if (fgMap && $('p_fg') && $('p_fg').classList.contains('on')) { fgInitMap(); fgMap.invalidateSize(); } }, 150);
+    }
+  });
 })();
 </script>
 </body></html>
