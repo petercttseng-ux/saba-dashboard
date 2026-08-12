@@ -1,0 +1,19 @@
+合併已完成，只差最後一步推送。
+
+在 D:\Jp0728\saba-dashboard\ 開啟終端機（PowerShell 或 Git Bash），執行：
+
+    git push origin main
+
+  首次推送會跳出 Git Credential Manager 視窗，
+  用瀏覽器登入 GitHub 授權即可（不需手動輸入 token）。
+
+這是 fast-forward 推送，不需要 --force，
+遠端的「最新資訊」與「漁場速預報」分頁完全保留。
+
+推送後 GitHub Pages 會自動更新：
+    https://petercttseng-ux.github.io/saba-dashboard/
+
+─────────────────────────────────────────
+本次變更（1 個 commit，領先遠端）
+  index.html  +160 / -58 行
+  README.md   年報版本與 2025 重點

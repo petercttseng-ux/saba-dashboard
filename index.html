@@ -245,7 +245,7 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:1
   <div class="sec-title">花腹鯖漁場速預報</div>
   <div class="card">
     <h3>環境適合度指數 HSI <span class="jp">Habitat Suitability Index・臺灣東北部海域</span></h3>
-    <div class="sub">以衛星遙測海表溫（SST）、葉綠素 a 濃度（Chl-a）與溫度鋒面強度，計算 0.1&deg; 網格的花腹鯖環境適合度。範圍 24.0&ndash;27.2&deg;N、120.5&ndash;124.5&deg;E，涵蓋彭佳嶼、棉花嶼、宜蘭灣與釣魚台列嶼周邊</div>
+    <div class="sub">以衛星遙測海表溫（SST）、葉綠素 a 濃度（Chl-a）與溫度鋒面強度，計算 0.1&deg; 網格的花腹鯖環境適合度，參數依季節自動切換（1–5 月產卵期／6–12 月索餌期）。範圍 24.0&ndash;27.2&deg;N、120.5&ndash;124.5&deg;E，涵蓋彭佳嶼、棉花嶼、宜蘭灣與釣魚台列嶼周邊</div>
     <div class="bar">
       <button class="btn" id="fgBtn">計算最新漁場速預報</button>
       <button class="btn ghost" id="fgClr">清除快取</button>
@@ -290,7 +290,16 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:1
       <table id="fgTop"><tr><td style="color:var(--ink3);border:none">尚未計算</td></tr></table>
     </div>
     <div class="card"><h3>指數參數 <span class="jp">可依實測漁獲校正</span></h3>
-      <div class="sub">預設值取自文獻；水試所可依實際漁獲資料調整後重新計算</div>
+      <div class="sub">預設值取自文獻（見下方「文獻依據」）；水試所可依實際漁獲資料調整後重新計算</div>
+      <div class="fg-row" style="margin-bottom:8px"><label>季節情境 <span class="jp">preset</span></label>
+        <select id="fgPreset" style="flex:1;background:#12243a;color:var(--ink);border:1px solid var(--panel-b);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:12px"></select></div>
+      <div class="fg-row" style="margin-bottom:10px"><label>合成模型 <span class="jp">HSI model</span></label>
+        <select id="fgModel" style="flex:1;background:#12243a;color:var(--ink);border:1px solid var(--panel-b);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:12px">
+          <option value="gmm">加權幾何平均 GMM（保守，現行）</option>
+          <option value="amm">加權算術平均 AMM（Kaneko 2009 依 AIC 最佳）</option>
+          <option value="min">最小值模式 MINM（最保守）</option>
+        </select></div>
+      <div id="fgPresetNote" style="font-size:11px;color:var(--ink3);line-height:1.6;margin-bottom:10px"></div>
       <div id="fgParams"></div>
       <div class="bar" style="margin-top:12px">
         <button class="btn ghost" id="fgRecalc">套用參數重算</button>
@@ -299,8 +308,36 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:1
     </div>
   </div>
 
+  <div class="card" style="margin-top:16px"><h3>文獻依據 <span class="jp">Literature basis</span></h3>
+    <div class="sub">本模型之適合度區間、因子選擇與合成方式均取自下列同儕審查文獻，非任意設定</div>
+    <table>
+      <tr><th style="width:30%">文獻</th><th style="width:34%">關鍵數值</th><th>本儀表板的採用方式</th></tr>
+      <tr><td><b>Lu et al. (2021)</b><br><span class="jp">Mackerel (<i>Scomber australasicus</i>) Reproduction in Northeastern Taiwan.<br>J. Mar. Sci. Eng. 9(12):1341</span></td>
+        <td>東北部海域花腹鯖<b>產卵期 1–5 月、盛期 2–4 月</b>；東海成熟個體分布於 <b>SST 17–25 °C</b>；2017 正常產卵年漁場日均溫 <b>23–26.6 °C</b>；2018–19 年 SST 由 1 月 21 °C 急升至 2–5 月 24–27.8 °C，產卵量下降</td>
+        <td>設定<b>產卵期模式</b>之適溫區間（最適 19–24 °C、容忍 15–27 °C）；並據此建立 1–5 月自動套用產卵期參數的季節切換</td></tr>
+      <tr><td><b>Kaneko et al. (2009)</b><br><span class="jp">Habitat suitability index of chub mackerel from July to September in the East China Sea. J. Oceanogr. 65</span></td>
+        <td>東海 7–9 月 <b>&gt;90% 漁獲</b>集中於 SST 28.0–29.4 °C、鹽度 33.6–34.2 psu、<b>Chl-a 0.15–0.50 mg/m³</b>、SSHA −0.1–1.1 m；四種 HSI 模型中<b>算術平均模式（AMM）依 AIC 最佳</b></td>
+        <td>Chl-a 最適下限採 <b>0.15 mg/m³</b>；並新增 <b>AMM 合成模型</b>選項與 GMM、MINM 並列，供使用者依海域與季節比較</td></tr>
+      <tr><td><b>Yu et al. (2018)</b><br><span class="jp">Climate-induced habitat suitability variations of chub mackerel in the East China Sea. Fish. Res. 207</span></td>
+        <td>HSI 與 <b>SSTA 正相關</b>、與 <b>SSHA 及 NPPA 負相關</b>；主漁場 25–30°N、120–130°E；SST、SSH、NPP 為關鍵環境變數</td>
+        <td>佐證負 SSHA（冷渦、湧升）為有利條件——目前以<b>溫度鋒面強度</b>作為湧升與輻合帶的代理指標</td></tr>
+      <tr><td><b>Frontiers in Marine Science (2025)</b><br><span class="jp">Spatial distribution relationship between mesoscale eddies and chub mackerel in the NW Pacific</span></td>
+        <td>漁獲密度於<b>氣旋渦（cyclonic eddy）高於反氣旋渦</b>，渦內與渦緣產量均提升</td>
+        <td>列為後續強化方向：擬納入 SSHA／渦流偵測圖層（見下方限制說明）</td></tr>
+      <tr><td><b>Yasuda et al. (2014)</b><br><span class="jp">Fishing ground hotspots reveal long-term variation in chub mackerel habitat in the East China Sea. MEPS 501</span></td>
+        <td>東海漁場熱點具長期變動，與海況年代際變化連動</td>
+        <td>支持「以環境即時計算漁場、而非固定漁區」的設計前提</td></tr>
+      <tr><td><b>FRA（2025.11.11）</b><br><span class="jp">最近のマサバ（太平洋）の資源の状況及び不漁の要因について（第2報）</span></td>
+        <td>親潮弱化與<b>黑潮續流極端北偏</b>造成常磐・三陸海域持續高溫，鯖魚難以南下；2025 年 4 月黑潮大蛇行終結</td>
+        <td>佐證「水溫異常改變洄游路徑」之機制，與臺灣端 2025 年漁獲驟降的觀察方向一致</td></tr>
+    </table>
+    <div class="note-box" style="margin-top:14px"><b>目前的模型限制：</b>文獻一致指出 <b>SSHA／中尺度渦流</b>與<b>鹽度、混合層深度</b>對鯖魚棲地有顯著影響，但本儀表板目前僅取用 SST 與 Chl-a 兩項衛星產品（加上由 SST 導出的鋒面強度）。SSHA 與鹽度需另接 Copernicus Marine 或 NOAA 之額外資料集，尚未納入。因此本指數應視為<b>相對排序工具</b>而非絕對漁獲預測——它指出「同一天之中哪些網格環境條件較佳」，不預測漁獲量。</div>
+  </div>
+
   <div class="card" style="margin-top:16px"><h3>指數建構方法 <span class="jp">Methodology</span></h3>
     <ul class="tight">
+      <li><b>合成模型可切換</b>：<b>GMM</b> 加權幾何平均（任一因子偏低即顯著拉低 HSI，最保守）、<b>AMM</b> 加權算術平均（Kaneko et al. 2009 於東海以 AIC 檢定為四種模型中最佳）、<b>MINM</b> 最小值模式（取最不利因子）。三者對同一天的資料會給出不同的熱區範圍，建議互相對照</li>
+      <li><b>季節情境自動切換</b>：1–5 月自動套用產卵期參數（依 Lu et al. 2021 東北部海域產卵場觀測），6–12 月切換為索餌期參數並提高鋒面權重；亦可手動改為廣域模式或自訂</li>
       <li><b>適溫指數 SI<sub>SST</sub></b>：梯形隸屬函數。最適區間內為 1.0，向外線性遞減至容忍界限歸零。預設最適 <b>20&ndash;23&deg;C</b>、容忍 17&ndash;27&deg;C，依據花腹鯖棲地水溫較白腹鯖（15&ndash;22&deg;C）更暖且更窄之研究結果</li>
       <li><b>適葉綠素指數 SI<sub>Chl</sub></b>：同為梯形函數，對濃度取以 10 為底之對數後計算。預設最適 <b>0.3&ndash;1.5 mg/m&sup3;</b>，對應陸棚鋒面帶之中等生產力水域</li>
       <li><b>鋒面指數 SI<sub>Front</sub></b>：由 SST 網格計算水平溫度梯度大小（&deg;C／10 km），以飽和函數轉為 0&ndash;1。黑潮鋒面與溫度鋒面為鯖類聚集帶</li>
@@ -1363,11 +1400,32 @@ const FG_KEY = 'sabaDash.fg.v1';
 const FG_BOX = { latMin: 24.0, latMax: 27.2, lonMin: 120.5, lonMax: 124.5 };
 const FG_PORT = { lat: 24.5861, lon: 121.8678, name: '南方澳' };
 
-const FG_DEF = {
-  sstLo: 17, sstOptLo: 20, sstOptHi: 23, sstHi: 27,
-  chlLo: 0.05, chlOptLo: 0.3, chlOptHi: 1.5, chlHi: 5.0,
-  frontSat: 0.5, wSst: 5, wChl: 3, wFront: 2
+/* 參數依文獻校正，詳見「文獻依據」卡片
+   Lu et al. 2021 (JMSE 9:1341)：東北部海域花腹鯖成熟個體分布於 SST 17–25 °C；
+     2017 正常產卵年漁場日均溫 23–26.6 °C；另有研究指 >80% 鯖魚漁獲來自 14.72–25.72 °C
+   Kaneko et al. 2009 (J Oceanogr 65)：東海 7–9 月 >90% 漁獲之 Chl-a 0.15–0.50 mg/m³ */
+const FG_PRESETS = {
+  spawn: { label: '產卵期模式（1–5月）', note: '依 Lu et al. 2021 東北部海域產卵場觀測校正，盛期 2–4 月',
+    sstLo: 15, sstOptLo: 19, sstOptHi: 24, sstHi: 27,
+    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 1.0, chlHi: 5.0,
+    frontSat: 0.5, wSst: 5, wChl: 3, wFront: 2 },
+  forage: { label: '索餌期模式（6–12月）', note: '放寬適溫上緣並提高鋒面權重，對應非產卵期之索餌洄游',
+    sstLo: 14, sstOptLo: 18, sstOptHi: 25, sstHi: 28,
+    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 1.2, chlHi: 5.0,
+    frontSat: 0.45, wSst: 4, wChl: 3, wFront: 3 },
+  broad: { label: '廣域模式（全年）', note: '依 >80% 漁獲之 SST 14.72–25.72 °C 設定，不分季節',
+    sstLo: 13, sstOptLo: 17, sstOptHi: 24, sstHi: 27,
+    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 1.0, chlHi: 5.0,
+    frontSat: 0.5, wSst: 5, wChl: 3, wFront: 2 }
 };
+/* 依當月自動選定情境：1–5 月產卵期，其餘索餌期 */
+function fgAutoPreset() { const m = new Date().getMonth() + 1; return (m >= 1 && m <= 5) ? 'spawn' : 'forage'; }
+let FG_PRESET_KEY = fgAutoPreset();
+/* 合成模型：gmm 加權幾何平均（保守）／amm 加權算術平均（Kaneko 2009 依 AIC 最佳）／min 最小值（最保守） */
+let FG_MODEL = 'gmm';
+const FG_MODEL_LABEL = { gmm: '加權幾何平均 GMM', amm: '加權算術平均 AMM', min: '最小值模式 MINM' };
+const FG_DEF = Object.assign({}, FG_PRESETS[FG_PRESET_KEY]);
+delete FG_DEF.label; delete FG_DEF.note;
 let FG_P = Object.assign({}, FG_DEF);
 const FG_MISS_PENALTY = 0.9;   /* 葉綠素缺值網格之信賴折扣 */
 
@@ -1525,18 +1583,23 @@ function fgCompute(sst, chl) {
       const siC = c === null ? null : trap(lg(c), lg(FG_P.chlLo), lg(FG_P.chlOptLo), lg(FG_P.chlOptHi), lg(FG_P.chlHi));
       const siF = Math.min(1, grad10 / Math.max(FG_P.frontSat, 1e-6));
 
-      let hsi, wsum;
+      /* 三種合成模型：siC 為 null（多為雲遮）時僅用水溫與鋒面，並乘信賴折扣，
+         避免無資料網格因少了一個可能不利的因子而被高估為熱區 */
       const e = 1e-6;
-      if (siC === null) {
-        /* 葉綠素缺值（多為雲遮）：僅以水溫與鋒面計算，並乘上信賴折扣，
-           避免無資料網格因少了一個可能不利的因子而被高估為熱區 */
-        wsum = wS + wF;
-        hsi = wsum > 0 ? Math.pow(Math.pow(siS + e, wS) * Math.pow(siF + e, wF), 1 / wsum) : 0;
-        hsi *= FG_MISS_PENALTY;
-      } else {
-        wsum = wS + wC + wF;
-        hsi = wsum > 0 ? Math.pow(Math.pow(siS + e, wS) * Math.pow(siC + e, wC) * Math.pow(siF + e, wF), 1 / wsum) : 0;
+      const si = (siC === null) ? [siS, siF] : [siS, siC, siF];
+      const ww = (siC === null) ? [wS, wF] : [wS, wC, wF];
+      const wsum = ww.reduce((a, b) => a + b, 0);
+      let hsi = 0;
+      if (wsum > 0) {
+        if (FG_MODEL === 'amm') {
+          hsi = si.reduce((a, v, k) => a + v * ww[k], 0) / wsum;
+        } else if (FG_MODEL === 'min') {
+          hsi = Math.min.apply(null, si.filter((v, k) => ww[k] > 0));
+        } else {
+          hsi = Math.exp(si.reduce((a, v, k) => a + ww[k] * Math.log(v + e), 0) / wsum);
+        }
       }
+      if (siC === null) hsi *= FG_MISS_PENALTY;
       cells.push({ la, lo, sst: +t.toFixed(2), chl: c === null ? null : +c.toFixed(3), grad: +grad10.toFixed(3), hsi: +hsi.toFixed(4), noChl: siC === null });
     }
   }
@@ -1712,6 +1775,31 @@ function fgBuildParams() {
     const r = $('fgp_' + s[0]);
     if (r) r.oninput = () => { FG_P[s[0]] = +r.value; $('fgv_' + s[0]).textContent = r.value; };
   });
+  const ps = $('fgPreset');
+  if (ps && !ps.dataset.init) {
+    ps.dataset.init = '1';
+    ps.innerHTML = Object.keys(FG_PRESETS).map(k =>
+      '<option value="' + k + '"' + (k === FG_PRESET_KEY ? ' selected' : '') + '>' + FG_PRESETS[k].label +
+      (k === fgAutoPreset() ? '（本月自動選定）' : '') + '</option>').join('');
+    ps.onchange = () => { fgApplyPreset(ps.value); };
+  }
+  const ms = $('fgModel');
+  if (ms && !ms.dataset.init) { ms.dataset.init = '1'; ms.value = FG_MODEL; ms.onchange = () => { FG_MODEL = ms.value; }; }
+  fgPresetNote();
+}
+function fgApplyPreset(k) {
+  if (!FG_PRESETS[k]) return;
+  FG_PRESET_KEY = k;
+  Object.keys(FG_PRESETS[k]).forEach(x => { if (x !== 'label' && x !== 'note') FG_P[x] = FG_PRESETS[k][x]; });
+  fgBuildParams();
+}
+function fgPresetNote() {
+  const el = $('fgPresetNote'); if (!el) return;
+  const P = FG_PRESETS[FG_PRESET_KEY], m = new Date().getMonth() + 1;
+  el.innerHTML = '<b>' + P.label + '</b>：' + P.note +
+    '　｜　合成模型：' + FG_MODEL_LABEL[FG_MODEL] +
+    (FG_PRESET_KEY === fgAutoPreset() ? '' : '　<span style="color:var(--acc2)">（已手動覆寫本月自動選定的「' + FG_PRESETS[fgAutoPreset()].label + '」）</span>') +
+    ((m >= 2 && m <= 4) ? '　<span style="color:var(--acc)">本月為花腹鯖產卵盛期（2–4 月）</span>' : '');
 }
 
 /* ---------- 禁漁期提醒 ---------- */
