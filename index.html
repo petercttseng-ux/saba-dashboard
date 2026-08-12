@@ -299,6 +299,8 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:1
           <option value="gmm">加權幾何平均 GMM（保守）</option>
           <option value="min">最小值模式 MINM（最保守）</option>
         </select></div>
+      <div class="fg-row" style="margin-bottom:10px"><label>已知漁場加權</label>
+        <label class="switch" style="flex:1"><input type="checkbox" id="fgGroundOn" checked>納入紅火心、宜蘭灣產卵場等已知漁場的空間權重</label></div>
       <div id="fgPresetNote" style="font-size:11px;color:var(--ink3);line-height:1.6;margin-bottom:10px"></div>
       <div id="fgParams"></div>
       <div class="bar" style="margin-top:12px">
@@ -306,6 +308,24 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid #23405c;font-size:1
         <button class="btn ghost" id="fgReset">回復預設值</button>
       </div>
     </div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h3>已知漁場與產卵場 <span class="jp">Known grounds layer</span></h3>
+    <div class="sub">除環境條件外，模型另納入一項<b>空間先驗</b>：位於下列已知漁場範圍內的網格會獲得較高權重，範圍外依距離指數衰減至基準值 0.30（不歸零）。座標均取自官方調查或漁民傳統漁場定義，可於上方參數面板關閉或調整權重</div>
+    <table>
+      <tr><th style="width:26%">漁場</th><th style="width:24%">範圍</th><th class="num" style="width:8%">權重</th><th>依據</th></tr>
+      <tr><td><b>紅火心</b></td><td>24.50–24.75°N<br>122.00–122.10°E</td><td class="num">1.00</td>
+        <td>漁民對宜蘭蘇澳外海傳統鯖魚漁場之俗稱，北緯 24°30′–45′、東經 122°00′–06′。亦為《鯖鰺漁業管理辦法》放寬大船作業之爭議海域</td></tr>
+      <tr><td><b>宜蘭灣產卵場<br>・東澳灣口</b></td><td>24.42–24.62°N<br>121.78–122.02°E</td><td class="num">1.00</td>
+        <td>水試所 2020 年 DEPM 調查之花腹鯖卵豐度峰值位置</td></tr>
+      <tr><td><b>宜蘭灣產卵場<br>・三貂角外海</b></td><td>24.90–25.15°N<br>121.92–122.25°E</td><td class="num">1.00</td>
+        <td>水試所 2021 年 DEPM 調查之峰值位置，較 2020 年<b>北移</b></td></tr>
+      <tr><td><b>北方三島周邊</b></td><td>25.32–25.78°N<br>121.90–122.30°E</td><td class="num">0.90</td>
+        <td>彭佳嶼、棉花嶼、花瓶嶼，黑潮支流湧升區，扒網主要作業海域</td></tr>
+      <tr><td><b>釣魚台列嶼周邊</b></td><td>25.55–26.05°N<br>123.20–123.80°E</td><td class="num">0.80</td>
+        <td>鯖鰺漁業傳統作業海域北緣</td></tr>
+    </table>
+    <div class="note-box" style="margin-top:12px"><b>水試所 DEPM 調查結果：</b>2020–2021 年於宜蘭灣設 53 個樣站，其中 <b>23 站採獲花腹鯖魚卵（共 621 顆）、22 站採獲白腹鯖魚卵（約 300 顆）</b>，另採獲日本竹筴魚、圓花鰹、扁花鰹與東方齒鰆卵——後四者同為扒網主要目標漁獲。這證實宜蘭灣是鯖鰺魚類在臺灣海域穩定的產卵場之一，也是本圖層將宜蘭灣外海列為最高權重的直接依據。<br><br><b>使用上的提醒：</b>此項為<b>先驗知識</b>而非即時環境觀測。開啟時地圖會同時反映「環境條件」與「歷史上已知的漁場位置」；若要純粹檢視當日環境訊號（例如尋找新漁場或驗證漁場是否北移），請關閉此權重。</div>
   </div>
 
   <div class="card" style="margin-top:16px"><h3>限制因子診斷 <span class="jp">Which factor caps the HSI</span></h3>
@@ -1431,8 +1451,8 @@ function fgMonthPreset(m) {
   const spawnSeason = (m >= 1 && m <= 5);
   return { label: '逐月氣候值（' + m + ' 月）', note: FG_MONTH_SRC[m] + '：最適 ' + b[0] + '–' + b[1] + ' °C、容忍 ' + b[2] + '–' + b[3] + ' °C',
     sstLo: b[2], sstOptLo: b[0], sstOptHi: b[1], sstHi: b[3],
-    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 1.2, chlHi: 5.0,
-    frontSat: 0.25, wSst: 4, wChl: 3, wFront: 3,
+    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 2.5, chlHi: 8.0,
+    frontSat: 0.25, wSst: 4, wChl: 3, wFront: 2, wGround: 3,
     spawn: spawnSeason };
 }
 const FG_PRESETS = {};
@@ -1446,8 +1466,8 @@ function fgRebuildPresets() {
     note: 'Kaneko et al. 2009 東海 >90% 漁獲：最適 28–29.5 °C、容忍 24.5–31.5 °C' });
   FG_PRESETS.broad = { label: '廣域模式（全年不分季節）', note: '依 >80% 漁獲之 SST 14.72–25.72 °C 設定，容忍範圍最寬',
     sstLo: 13, sstOptLo: 17, sstOptHi: 26, sstHi: 31,
-    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 1.2, chlHi: 5.0,
-    frontSat: 0.25, wSst: 4, wChl: 3, wFront: 3 };
+    chlLo: 0.05, chlOptLo: 0.15, chlOptHi: 2.5, chlHi: 8.0,
+    frontSat: 0.25, wSst: 4, wChl: 3, wFront: 2, wGround: 3 };
 }
 fgRebuildPresets();
 function fgAutoPreset() { return 'auto'; }
@@ -1458,6 +1478,39 @@ const FG_MODEL_LABEL = { gmm: '加權幾何平均 GMM', amm: '加權算術平均
 const FG_DEF = Object.assign({}, FG_PRESETS[FG_PRESET_KEY]);
 delete FG_DEF.label; delete FG_DEF.note;
 let FG_P = Object.assign({}, FG_DEF);
+/* 已知漁場與產卵場（座標均有文獻或官方調查依據）
+   紅火心：漁民對宜蘭蘇澳外海傳統鯖魚漁場之俗稱，範圍北緯 24°30′–24°45′、東經 122°00′–122°06′
+   宜蘭灣產卵場：水試所 2020–2021 年日魚卵生產模式（DEPM）調查，53 站中 23 站採獲花腹鯖卵
+     （621 顆）、22 站採獲白腹鯖卵；2020 年卵豐度峰值於東澳灣口，2021 年北移至三貂角外海
+   北方三島：彭佳嶼、棉花嶼、花瓶嶼周邊，黑潮支流上湧區，扒網主要作業海域 */
+const FG_GROUNDS = [
+  { name: '紅火心（傳統鯖魚漁場）', latMin: 24.50, latMax: 24.75, lonMin: 122.00, lonMax: 122.10,
+    w: 1.00, src: '漁民傳統漁場，北緯24°30′–45′／東經122°00′–06′' },
+  { name: '宜蘭灣產卵場・東澳灣口', latMin: 24.42, latMax: 24.62, lonMin: 121.78, lonMax: 122.02,
+    w: 1.00, src: '水試所 DEPM 2020 年花腹鯖卵豐度峰值' },
+  { name: '宜蘭灣產卵場・三貂角外海', latMin: 24.90, latMax: 25.15, lonMin: 121.92, lonMax: 122.25,
+    w: 1.00, src: '水試所 DEPM 2021 年花腹鯖卵豐度峰值（產卵場北移）' },
+  { name: '北方三島周邊', latMin: 25.32, latMax: 25.78, lonMin: 121.90, lonMax: 122.30,
+    w: 0.90, src: '彭佳嶼・棉花嶼・花瓶嶼，湧升區、扒網主漁場' },
+  { name: '釣魚台列嶼周邊', latMin: 25.55, latMax: 26.05, lonMin: 123.20, lonMax: 123.80,
+    w: 0.80, src: '鯖鰺漁業傳統作業海域北緣' }
+];
+const FG_GROUND_BASE = 0.30;   /* 已知漁場以外海域的基準值，避免非漁場被歸零 */
+const FG_GROUND_DECAY = 0.35;  /* 距漁場邊界之衰減尺度（度） */
+let FG_USE_GROUND = true;
+/* 與已知漁場的空間關聯度：位於範圍內為該漁場權重，範圍外依距離指數衰減至基準值 */
+function fgGroundSI(la, lo) {
+  if (!FG_USE_GROUND) return null;
+  let best = FG_GROUND_BASE;
+  for (const g of FG_GROUNDS) {
+    const dLa = Math.max(g.latMin - la, 0, la - g.latMax);
+    const dLo = Math.max(g.lonMin - lo, 0, lo - g.lonMax) * Math.cos(la * Math.PI / 180);
+    const d = Math.sqrt(dLa * dLa + dLo * dLo);
+    const v = FG_GROUND_BASE + (g.w - FG_GROUND_BASE) * Math.exp(-(d * d) / (2 * FG_GROUND_DECAY * FG_GROUND_DECAY));
+    if (v > best) best = v;
+  }
+  return Math.min(1, best);
+}
 const FG_SI_FLOOR = 0.05;      /* 單因子適合度下限，避免梯形函數歸零使 HSI 崩塌 */
 const FG_MISS_PENALTY = 0.9;   /* 葉綠素缺值網格之信賴折扣 */
 
@@ -1465,9 +1518,10 @@ const FG_SPEC = [
   ['sstLo', '水溫容忍下限', '°C', 10, 24, 0.5], ['sstOptLo', '水溫最適下限', '°C', 14, 26, 0.5],
   ['sstOptHi', '水溫最適上限', '°C', 16, 30, 0.5], ['sstHi', '水溫容忍上限', '°C', 18, 33, 0.5],
   ['chlLo', '葉綠素容忍下限', 'mg/m³', 0.01, 0.5, 0.01], ['chlOptLo', '葉綠素最適下限', 'mg/m³', 0.05, 2, 0.05],
-  ['chlOptHi', '葉綠素最適上限', 'mg/m³', 0.2, 5, 0.05], ['chlHi', '葉綠素容忍上限', 'mg/m³', 1, 20, 0.5],
+  ['chlOptHi', '葉綠素最適上限', 'mg/m³', 0.2, 8, 0.05], ['chlHi', '葉綠素容忍上限', 'mg/m³', 1, 20, 0.5],
   ['frontSat', '鋒面飽和梯度', '°C/10km', 0.1, 2, 0.05],
-  ['wSst', '水溫權重', '', 0, 10, 1], ['wChl', '葉綠素權重', '', 0, 10, 1], ['wFront', '鋒面權重', '', 0, 10, 1]
+  ['wSst', '水溫權重', '', 0, 10, 1], ['wChl', '葉綠素權重', '', 0, 10, 1], ['wFront', '鋒面權重', '', 0, 10, 1],
+  ['wGround', '已知漁場權重', '', 0, 10, 1]
 ];
 
 /* ERDDAP 候選資料集（依序嘗試） */
@@ -1621,8 +1675,10 @@ function fgCompute(sst, chl) {
       /* 三種合成模型：siC 為 null（多為雲遮）時僅用水溫與鋒面，並乘信賴折扣，
          避免無資料網格因少了一個可能不利的因子而被高估為熱區 */
       const e = 1e-6;
+      const siG = fgGroundSI(la, lo);
       const si = (siC === null) ? [siS, siF] : [siS, siC, siF];
       const ww = (siC === null) ? [wS, wF] : [wS, wC, wF];
+      if (siG !== null && FG_P.wGround > 0) { si.push(siG); ww.push(FG_P.wGround); }
       const wsum = ww.reduce((a, b) => a + b, 0);
       let hsi = 0;
       if (wsum > 0) {
@@ -1636,7 +1692,8 @@ function fgCompute(sst, chl) {
       }
       if (siC === null) hsi *= FG_MISS_PENALTY;
       cells.push({ la, lo, sst: +t.toFixed(2), chl: c === null ? null : +c.toFixed(3), grad: +grad10.toFixed(3), hsi: +hsi.toFixed(4), noChl: siC === null,
-        siS: +siS.toFixed(3), siC: siC === null ? null : +siC.toFixed(3), siF: +siF.toFixed(3) });
+        siS: +siS.toFixed(3), siC: siC === null ? null : +siC.toFixed(3), siF: +siF.toFixed(3),
+        siG: siG === null ? null : +siG.toFixed(3) });
     }
   }
   return { cells, lats, lons, dLat: lats.length > 1 ? lats[1] - lats[0] : 0.1, dLon: lons.length > 1 ? lons[1] - lons[0] : 0.1 };
@@ -1806,11 +1863,12 @@ function fgDiagnose(valid) {
   if (!valid || !valid.length) { el.textContent = '無有效網格。'; return; }
   const avg = k => { const a = valid.map(c => c[k]).filter(v => v !== null && v !== undefined);
     return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
-  const mS = avg('siS'), mC = avg('siC'), mF = avg('siF'), mH = avg('hsi');
+  const mS = avg('siS'), mC = avg('siC'), mF = avg('siF'), mG = avg('siG'), mH = avg('hsi');
   const sstA = valid.reduce((a, c) => a + c.sst, 0) / valid.length;
   const rows = [['適溫 SI_SST', mS, FG_P.sstOptLo + '–' + FG_P.sstOptHi + ' °C（容忍 ' + FG_P.sstLo + '–' + FG_P.sstHi + '）'],
                 ['葉綠素 SI_Chl', mC, FG_P.chlOptLo + '–' + FG_P.chlOptHi + ' mg/m³'],
-                ['鋒面 SI_Front', mF, '飽和梯度 ' + FG_P.frontSat + ' °C/10km']];
+                ['鋒面 SI_Front', mF, '飽和梯度 ' + FG_P.frontSat + ' °C/10km'],
+                ['已知漁場 SI_Ground', mG, FG_USE_GROUND ? (FG_GROUNDS.length + ' 處漁場／產卵場，權重 ' + FG_P.wGround) : '已關閉']];
   const worst = rows.filter(r => r[1] !== null).sort((a, b) => a[1] - b[1])[0];
   let s = '<table style="width:100%"><tr><th>因子</th><th class="num">平均 SI</th><th>目前設定</th><th>判讀</th></tr>';
   rows.forEach(r => {
@@ -1854,6 +1912,9 @@ function fgBuildParams() {
       '<option value="' + k + '"' + (k === FG_PRESET_KEY ? ' selected' : '') + '>' + FG_PRESETS[k].label + '</option>').join('');
     ps.onchange = () => { fgApplyPreset(ps.value); };
   }
+  const gb = $('fgGroundOn');
+  if (gb && !gb.dataset.init) { gb.dataset.init = '1'; gb.checked = FG_USE_GROUND;
+    gb.onchange = () => { FG_USE_GROUND = gb.checked; fgPresetNote(); }; }
   const ms = $('fgModel');
   if (ms && !ms.dataset.init) { ms.dataset.init = '1'; ms.value = FG_MODEL; ms.onchange = () => { FG_MODEL = ms.value; fgPresetNote(); }; }
   fgPresetNote();
